@@ -168,8 +168,10 @@ export function CompanionPanel({ userPrompt }: CompanionPanelProps) {
                   from the Claude backend as they arrive — the typing speed will
                   naturally match the LLM's output rate. */}
               <Typewriter
-                text="This is a chain of thought that is live typed as the agent is generating a response. All relevant information here can be referenced later when the user expands the chain of thought accordion using the chevron."
-                speedMs={8}
+                text="Scanning knowledge base for relevant topic clusters. Cross-referencing historical conversation patterns. Identifying high-signal themes for agent configuration."
+                mode="phrase"
+                phraseSize={3}
+                speedMs={90}
                 delayMs={400}
                 style={{
                   fontSize: 12,
