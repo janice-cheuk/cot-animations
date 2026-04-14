@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { CompanionPanel } from "../companion/CompanionPanel";
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -111,6 +113,111 @@ function BuildPlanEmptyState() {
   );
 }
 
+// ── Knowledge Base Panel ─────────────────────────────────────────────────────
+
+function SearchIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <circle cx="6" cy="6" r="4" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M9.5 9.5L12 12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <path d="M5 2.5H2.5v8h8V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 2.5h2.5V5M10.5 2.5L6 7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function UploadIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M7 9.5V3M4.5 5.5L7 3L9.5 5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2 10.5v1a.5.5 0 00.5.5h9a.5.5 0 00.5-.5v-1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+const KB_ARTICLES = [
+  { title: "Ocean Bank Knowledge Base", desc: "Description of knowledge base article?" },
+  { title: "Account Opening Guide", desc: "Step-by-step instructions on how to open a new account." },
+  { title: "Mobile Banking Features", desc: "Overview of features available through the mobile banking app." },
+  { title: "Loan Application Process", desc: "Detailed description of the loan application and approval procedure." },
+  { title: "Fraud Prevention Tips", desc: "Best practices to protect your account from fraudulent activities." },
+  { title: "Customer Support Services", desc: "Available support channels and how to contact customer service." },
+];
+
+function KnowledgeBasePanel() {
+  return (
+    <motion.div
+      key="kb-panel"
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", padding: "20px 24px", gap: 16, overflow: "hidden" }}
+    >
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color: "var(--content-primary)" }}>Knowledge Base</span>
+        <button style={{
+          display: "flex", alignItems: "center", gap: 6, padding: "5px 12px",
+          borderRadius: 8, border: "1px solid var(--border-default)",
+          background: "white", cursor: "pointer", fontSize: 12, fontWeight: 550,
+          color: "var(--content-primary)",
+        }}>
+          Upload <UploadIcon />
+        </button>
+      </div>
+
+      {/* Search */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8,
+        border: "1px solid var(--border-default)", borderRadius: 8,
+        padding: "7px 12px", background: "white", flexShrink: 0,
+      }}>
+        <span style={{ color: "var(--content-secondary)", display: "flex" }}><SearchIcon /></span>
+        <span style={{ fontSize: 13, color: "var(--content-secondary)" }}>Search KB articles</span>
+        <div style={{ marginLeft: "auto", display: "flex" }}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M3.5 5.25L7 8.75L10.5 5.25" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Article list */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 0, overflowY: "auto", flex: 1 }}>
+        {KB_ARTICLES.map((article, i) => (
+          <motion.div
+            key={article.title}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.06, duration: 0.25, ease: "easeOut" }}
+            style={{
+              display: "flex", flexDirection: "column", gap: 3,
+              padding: "14px 0",
+              borderBottom: i < KB_ARTICLES.length - 1 ? "1px solid var(--border-default)" : "none",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 13, fontWeight: 550, color: "#205ae3", cursor: "pointer" }}>
+                {article.title}
+              </span>
+              <span style={{ color: "#205ae3", display: "flex", opacity: 0.7 }}><ExternalLinkIcon /></span>
+            </div>
+            <span style={{ fontSize: 12, color: "var(--content-secondary)", lineHeight: 1.5 }}>
+              {article.desc}
+            </span>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 
 interface BuilderPageProps {
@@ -118,6 +225,10 @@ interface BuilderPageProps {
 }
 
 export function BuilderPage({ prompt }: BuilderPageProps) {
+  const [activeTab, setActiveTab] = useState<typeof TABS[number]>("Plan");
+
+  const handleNavigateKB = () => setActiveTab("Knowledge Base");
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden" style={{ padding: 8 }}>
       <div
@@ -189,12 +300,14 @@ export function BuilderPage({ prompt }: BuilderPageProps) {
             {TABS.map((tab) => (
               <div
                 key={tab}
+                onClick={() => setActiveTab(tab)}
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
                   padding: "8px 0",
-                  borderBottom: tab === "Plan" ? "2px solid var(--border-action)" : "2px solid transparent",
-                  color: tab === "Plan" ? "var(--content-action)" : "var(--content-secondary)",
+                  borderBottom: tab === activeTab ? "2px solid var(--border-action)" : "2px solid transparent",
+                  color: tab === activeTab ? "var(--content-action)" : "var(--content-secondary)",
                   cursor: "pointer",
+                  transition: "color 0.15s ease, border-color 0.15s ease",
                 }}
               >
                 {tabIcon(tab)}
@@ -224,23 +337,37 @@ export function BuilderPage({ prompt }: BuilderPageProps) {
 
         {/* Content area */}
         <div style={{ flex: 1, display: "flex", gap: 16, padding: 16, overflow: "hidden", minHeight: 0 }}>
-          {/* Build plan area */}
+          {/* Main tab content area */}
           <div
             style={{
               flex: 1,
               background: "white",
               borderRadius: 16,
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              alignItems: activeTab === "Knowledge Base" ? "flex-start" : "center",
+              justifyContent: activeTab === "Knowledge Base" ? "flex-start" : "center",
               overflow: "hidden",
             }}
           >
-            <BuildPlanEmptyState />
+            <AnimatePresence mode="wait">
+              {activeTab === "Knowledge Base" ? (
+                <KnowledgeBasePanel key="kb" />
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <BuildPlanEmptyState />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Companion panel */}
-          <CompanionPanel userPrompt={prompt} />
+          <CompanionPanel userPrompt={prompt} onNavigateKB={handleNavigateKB} />
         </div>
       </div>
     </div>

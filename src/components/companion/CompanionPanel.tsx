@@ -1,7 +1,9 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Typewriter } from "../../engine/primitives/Typewriter";
 import { AIAnalystIllustration } from "./AIAnalystIllustration";
+
+// ── Icon components ──────────────────────────────────────────────────────────
 
 function HistoryIcon() {
   return (
@@ -12,7 +14,6 @@ function HistoryIcon() {
     </svg>
   );
 }
-
 function CollapseIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -22,7 +23,6 @@ function CollapseIcon() {
     </svg>
   );
 }
-
 function ChevronDownIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -30,7 +30,6 @@ function ChevronDownIcon() {
     </svg>
   );
 }
-
 function PlusIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -38,7 +37,6 @@ function PlusIcon() {
     </svg>
   );
 }
-
 function ArrowUpIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -46,27 +44,517 @@ function ArrowUpIcon() {
     </svg>
   );
 }
+function FileIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M3 1.5H7.5L11 5V11.5H3V1.5Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+      <path d="M7.5 1.5V5H11" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function QuoteIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
+      <path d="M1 4.5C1 3.4 1.9 2.5 3 2.5H4.5V5.5H3C3 6.6 3.9 7.5 5 7.5V9.5C2.8 9.5 1 7.7 1 5.5V4.5Z" fill="currentColor" opacity="0.5" />
+      <path d="M7 4.5C7 3.4 7.9 2.5 9 2.5H10.5V5.5H9C9 6.6 9.9 7.5 11 7.5V9.5C8.8 9.5 7 7.7 7 5.5V4.5Z" fill="currentColor" opacity="0.5" />
+    </svg>
+  );
+}
 
+// Task list icons — match Figma node 553:5299
+function ListCheckIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M5 3h6M5 6h6M5 9h6" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" />
+      <path d="M1.5 3.5l.7.7 1.3-1.4" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M1.5 6.5l.7.7 1.3-1.4" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M1.5 9.5l.7.7 1.3-1.4" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function CircleCheckIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+      <circle cx="6" cy="6" r="5" fill="#34d399" />
+      <path d="M3.5 6.2l1.5 1.5 3.5-3.4" stroke="white" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function CircleDashedIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+      <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.15" strokeDasharray="2.5 1.5" fill="none" />
+    </svg>
+  );
+}
+function CircleEmptyIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+      <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.15" fill="none" />
+    </svg>
+  );
+}
+
+// ── Spinner for "in progress" file ───────────────────────────────────────────
+function Spinner() {
+  return (
+    <motion.svg
+      width="13" height="13" viewBox="0 0 13 13" fill="none"
+      style={{ flexShrink: 0 }}
+      animate={{ rotate: 360 }}
+      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+    >
+      <circle cx="6.5" cy="6.5" r="5" stroke="var(--border-default)" strokeWidth="1.5" />
+      <path d="M6.5 1.5A5 5 0 0 1 11.5 6.5" stroke="var(--content-action)" strokeWidth="1.5" strokeLinecap="round" />
+    </motion.svg>
+  );
+}
+
+// ── Scene visual components ──────────────────────────────────────────────────
+
+const BODY_STYLE: React.CSSProperties = {
+  fontSize: 12, fontWeight: 400, lineHeight: 1.55, color: "var(--content-secondary)",
+};
+
+// Scene 0 — Topic Discovery
+function TopicDiscoveryBody({ sceneKey }: { sceneKey: number }) {
+  return (
+    <>
+      <Typewriter
+        key={sceneKey}
+        text="Scanning knowledge base for relevant topic clusters. Cross-referencing historical conversation patterns. Identifying high-signal themes for agent configuration."
+        mode="phrase" phraseSize={3} speedMs={90} delayMs={300}
+        style={BODY_STYLE}
+      />
+      <AIAnalystIllustration />
+    </>
+  );
+}
+
+// Scene 1 — Files Explored
+const EXPLORE_FILES = [
+  { name: "customer_support_intents.md",  status: "done"    },
+  { name: "escalation_playbook.json",     status: "done"    },
+  { name: "tone_guidelines.md",           status: "done"    },
+  { name: "billing_workflows.yaml",       status: "done"    },
+  { name: "historical_conversations.db",  status: "active"  },
+];
+
+function ArrowRightIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function BookIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M2 2.5C2 2.5 4 2 7 3.5C10 2 12 2.5 12 2.5V11.5C12 11.5 10 11 7 12.5C4 11 2 11.5 2 11.5V2.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M7 3.5V12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function AISpinner() {
+  return (
+    <motion.svg
+      width="12" height="12" viewBox="0 0 12 12" fill="none"
+      style={{ flexShrink: 0 }}
+      animate={{ rotate: 360 }}
+      transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}
+    >
+      <circle cx="6" cy="6" r="4.5" stroke="#dee5eb" strokeWidth="1.4" />
+      <path d="M6 1.5A4.5 4.5 0 0 1 10.5 6" stroke="#205ae3" strokeWidth="1.4" strokeLinecap="round" />
+    </motion.svg>
+  );
+}
+
+const CLARIFYING_CHOICES = [
+  { id: "A", text: "This is the first answer choice the user can select",  selected: true  },
+  { id: "B", text: "This is the first answer choice the user can select",  selected: false },
+  { id: "C", text: "This is the second answer choice the user can select", selected: false },
+  { id: "D", text: "This is the third answer choice the user can select",  selected: false },
+];
+
+function ClarifyingQuestions() {
+  const [selected, setSelected] = useState<string>("A");
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      style={{
+        display: "flex", flexDirection: "column", gap: 10,
+        background: "white",
+        border: "1px solid var(--border-default)",
+        borderRadius: 10,
+        padding: "10px 12px",
+      }}
+    >
+      {/* Question + subcopy */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <p style={{ margin: 0, fontSize: 12, fontWeight: 600, lineHeight: 1.5, color: "#000" }}>
+          Here is a clarifying question the agent asks to ensure the prompt it's writing matches the user's expectations?
+        </p>
+        <p style={{ margin: 0, fontSize: 12, fontWeight: 425, lineHeight: 1.5, color: "var(--content-secondary)" }}>
+          This is where there can be additional subcopy for additional context
+        </p>
+      </div>
+
+      {/* Answer choices */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {CLARIFYING_CHOICES.map((choice, i) => {
+          const isSelected = selected === choice.id;
+          return (
+            <motion.div
+              key={choice.id}
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.07, duration: 0.22, ease: "easeOut" }}
+              onClick={() => setSelected(choice.id)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "3px 4px", borderRadius: 6, cursor: "pointer",
+                background: isSelected ? "#f1f5ff" : "transparent",
+                transition: "background 0.15s ease",
+              }}
+            >
+              <div style={{
+                width: 18, height: 18, borderRadius: 999, flexShrink: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                background: isSelected ? "var(--content-action)" : "transparent",
+                transition: "background 0.15s ease",
+              }}>
+                <span style={{
+                  fontSize: 10, fontWeight: 600, lineHeight: 1,
+                  color: isSelected ? "white" : "var(--content-secondary)",
+                }}>
+                  {choice.id}
+                </span>
+              </div>
+              <span style={{ fontSize: 12, lineHeight: 1.5, color: "var(--content-secondary)" }}>
+                {choice.text}
+              </span>
+            </motion.div>
+          );
+        })}
+
+        {/* Other row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 4px" }}>
+          <div style={{
+            width: 18, height: 18, borderRadius: 999, flexShrink: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: "var(--content-secondary)" }}>…</span>
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 550, lineHeight: 1.5, color: "var(--content-secondary)" }}>Other</span>
+          <span style={{ fontSize: 12, lineHeight: 1.5, color: "#a1b0b7" }}>Provide a custom response</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <path d="M2.5 6.5L5.5 9.5L10.5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function NavigationPill({ done }: { done: boolean }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 6,
+        background: "white",
+        border: "1px solid var(--border-default)",
+        borderRadius: 999,
+        padding: "3px 8px 3px 5px",
+        alignSelf: "flex-start",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <motion.div
+          style={{ display: "flex", alignItems: "center" }}
+          animate={{ opacity: 1 }}
+        >
+          <AnimatePresence mode="wait">
+            {done ? (
+              <motion.span
+                key="check"
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                style={{ color: "var(--content-action)", display: "flex" }}
+              >
+                <CheckIcon />
+              </motion.span>
+            ) : (
+              <motion.span key="spinner" exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+                <AISpinner />
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.div>
+        <span style={{ fontSize: 12, fontWeight: 550, lineHeight: 1.55, color: done ? "var(--content-secondary)" : "var(--content-primary)", whiteSpace: "nowrap" }}>
+          {done ? "Navigated" : "Navigating"}
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+        <div style={{ height: 20, display: "flex", alignItems: "center", padding: "0 6px", borderRadius: 999 }}>
+          <span style={{ fontSize: 11, fontWeight: 550, color: "var(--content-secondary)", whiteSpace: "nowrap" }}>Agents</span>
+        </div>
+        <span style={{ color: "var(--content-secondary)", display: "flex", opacity: 0.6 }}><ArrowRightIcon /></span>
+        <div style={{ height: 20, display: "flex", alignItems: "center", gap: 4, padding: "0 6px", borderRadius: 999 }}>
+          <span style={{ color: "#205ae3", display: "flex" }}><BookIcon /></span>
+          <span style={{ fontSize: 11, fontWeight: 550, color: "#205ae3", whiteSpace: "nowrap" }}>Knowledge Base</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function FilesExploredBody() {
+  const [fileDone, setFileDone] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setFileDone(true), 2200);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      {EXPLORE_FILES.map((f, i) => {
+        const resolved = f.status === "active" && fileDone ? "done" : f.status;
+        return (
+          <motion.div
+            key={f.name}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: resolved === "pending" ? 0.35 : 1, x: 0 }}
+            transition={{ delay: i * 0.13, duration: 0.28, ease: "easeOut" }}
+            style={{ display: "flex", alignItems: "center", gap: 7 }}
+          >
+            {resolved === "done"    && <span style={{ color: "var(--content-action)" }}><FileIcon /></span>}
+            {resolved === "active"  && <Spinner />}
+            {resolved === "pending" && <span style={{ color: "var(--border-default)" }}><FileIcon /></span>}
+            <span style={{
+              fontFamily: "'SF Mono', 'Fira Code', monospace",
+              fontSize: 11.5,
+              color: resolved === "active" ? "var(--content-primary)" : "var(--content-secondary)",
+            }}>
+              {f.name}
+            </span>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Scene 2 — Tasks (Figma node 553:5299)
+// States: circle-check (done, green), circle-dashed (active), circle (pending)
+const COT_TASKS = [
+  { label: "The agent is referencing the section ", linkLabel: "Knowledge Base", status: "done"    },
+  { label: "This is the task the agent is working on",     status: "active"  },
+  { label: "This is the next task the agent will work on", status: "pending" },
+  { label: "This is the next task the agent will work on", status: "pending" },
+  { label: "This is the next task the agent will work on", status: "pending" },
+  { label: "This is the next task the agent will work on", status: "pending" },
+];
+function TodoTasksBody() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Section header */}
+      <motion.div
+        initial={{ opacity: 0, x: -6 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
+        style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--content-secondary)" }}
+      >
+        <ListCheckIcon />
+        <span style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.55 }}>Tasks to complete</span>
+      </motion.div>
+
+      {/* Task items — indented 24px, matching Figma pl-[24px] */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: 0 }}>
+        {COT_TASKS.map((t, i) => (
+          <motion.div
+            key={`${t.status}-${i}`}
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 + i * 0.1, duration: 0.25, ease: "easeOut" }}
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
+          >
+            {t.status === "done"    && <CircleCheckIcon />}
+            {t.status === "active"  && (
+              <motion.span
+                animate={{ opacity: [1, 0.5, 1] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <CircleDashedIcon />
+              </motion.span>
+            )}
+            {t.status === "pending" && <span style={{ opacity: 0.4 }}><CircleEmptyIcon /></span>}
+            <span style={{
+              fontSize: 12, fontWeight: 400, lineHeight: 1.55,
+              color: "var(--content-secondary)",
+              opacity: t.status === "pending" ? 0.5 : 1,
+            }}>
+              {t.label}
+              {t.linkLabel && (
+                <span style={{ color: "#205ae3", cursor: "pointer" }}>{t.linkLabel}</span>
+              )}
+            </span>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Scene 3 — Generic reasoning text
+function GenericReasoningBody({ sceneKey }: { sceneKey: number }) {
+  return (
+    <Typewriter
+      key={sceneKey}
+      text="Evaluating intent taxonomy against training data. Confidence threshold met for 9 of 12 intent categories. Flagging ambiguous cases for human review. Agent routing logic finalized with 3 escalation tiers."
+      mode="phrase" phraseSize={3} speedMs={85} delayMs={300}
+      style={BODY_STYLE}
+    />
+  );
+}
+
+// Scene 4 — Agent referencing relevant sections
+const REFERENCES = [
+  {
+    title: "Escalation handling pattern",
+    source: "cresta_agent_docs/billing_agent.md:45",
+    excerpt: "\"Route to senior agent when sentiment score drops below 0.4 for two consecutive turns.\"",
+  },
+  {
+    title: "Response tone guideline",
+    source: "templates/customer_support.yaml:12",
+    excerpt: "\"Acknowledge the issue first before presenting resolution options.\"",
+  },
+  {
+    title: "Intent fallback config",
+    source: "configs/fallback_intents.json:8",
+    excerpt: "\"Trigger clarification prompt when confidence < 0.65.\"",
+  },
+];
+function AgentSectionsBody() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {REFERENCES.map((r, i) => (
+        <motion.div
+          key={r.source}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.18, duration: 0.3, ease: "easeOut" }}
+          style={{
+            background: "var(--background-surface)",
+            border: "1px solid var(--border-default)",
+            borderRadius: 8, padding: "8px 10px",
+            display: "flex", flexDirection: "column", gap: 4,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ color: "var(--content-action)" }}><QuoteIcon /></span>
+            <span style={{ fontSize: 11.5, fontWeight: 550, color: "var(--content-primary)" }}>{r.title}</span>
+          </div>
+          <span style={{ fontFamily: "'SF Mono', 'Fira Code', monospace", fontSize: 10.5, color: "var(--content-secondary)", opacity: 0.7 }}>
+            {r.source}
+          </span>
+          <span style={{ fontSize: 11.5, lineHeight: 1.5, color: "var(--content-secondary)", fontStyle: "italic" }}>
+            {r.excerpt}
+          </span>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// ── Scene definitions ────────────────────────────────────────────────────────
+
+const SCENES = [
+  { id: "topic-discovery", header: "Analyzing topic discovery for relevant insights" },
+  { id: "files-explored",  header: "Exploring relevant knowledge base files" },
+  { id: "todos-tasks",     header: "Thinking" },
+  { id: "generic-text",    header: "Generating agent response strategy" },
+  { id: "agent-sections",  header: "Referencing relevant agent patterns" },
+] as const;
+
+// ── Main component ───────────────────────────────────────────────────────────
 
 interface CompanionPanelProps {
   userPrompt: string;
+  onNavigateKB?: () => void;
 }
 
-export function CompanionPanel({ userPrompt }: CompanionPanelProps) {
+export function CompanionPanel({ userPrompt, onNavigateKB }: CompanionPanelProps) {
   const [inputValue, setInputValue] = useState("");
+  const [cotIndex, setCotIndex] = useState(0);
+  const dirRef = useRef(1);
+  const [spinDone, setSpinDone] = useState(false);
+  const [navDone, setNavDone] = useState(false);
+
+  // Reset and re-arm when entering scene 2 (Tasks to complete)
+  useEffect(() => {
+    setSpinDone(false);
+    setNavDone(false);
+    if (cotIndex === 2) {
+      const t = setTimeout(() => setSpinDone(true), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [cotIndex]);
+
+  useEffect(() => {
+    if (spinDone && cotIndex === 2 && onNavigateKB) {
+      const t = setTimeout(() => {
+        onNavigateKB();
+        setNavDone(true);
+      }, 1200);
+      return () => clearTimeout(t);
+    }
+  }, [spinDone, cotIndex, onNavigateKB]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "ArrowRight") {
+        dirRef.current = 1;
+        setCotIndex(i => Math.min(i + 1, SCENES.length - 1));
+      } else if (e.key === "ArrowLeft") {
+        dirRef.current = -1;
+        setCotIndex(i => Math.max(i - 1, 0));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const slideVariants = {
+    enter: (dir: number) => ({ x: dir * 36, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit:  (dir: number) => ({ x: dir * -36, opacity: 0 }),
+  };
 
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        width: 380,
-        height: "100%",
+        display: "flex", flexDirection: "column",
+        width: 380, height: "100%",
         background: "var(--background-elevation)",
         border: "1px solid var(--border-default)",
-        borderRadius: 12,
-        overflow: "hidden",
-        flexShrink: 0,
+        borderRadius: 12, overflow: "hidden", flexShrink: 0,
       }}
     >
       {/* Panel header */}
@@ -75,25 +563,17 @@ export function CompanionPanel({ userPrompt }: CompanionPanelProps) {
           background: "var(--background-surface)",
           borderBottom: "1px solid var(--border-default)",
           padding: 16,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: 16, fontWeight: 550, color: "var(--content-secondary)" }}>
-          Companion
-        </span>
+        <span style={{ fontSize: 16, fontWeight: 550, color: "var(--content-secondary)" }}>Companion</span>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <button
-            style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", color: "var(--content-secondary)", display: "flex" }}
-          >
+          <button style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", color: "var(--content-secondary)", display: "flex" }}>
             <HistoryIcon />
           </button>
           <div style={{ width: 1, height: 16, background: "var(--border-default)" }} />
-          <button
-            style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", color: "var(--content-secondary)", display: "flex" }}
-          >
+          <button style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", color: "var(--content-secondary)", display: "flex" }}>
             <CollapseIcon />
           </button>
         </div>
@@ -102,146 +582,142 @@ export function CompanionPanel({ userPrompt }: CompanionPanelProps) {
       {/* Messages area */}
       <div
         style={{
-          flex: 1,
-          overflowY: "auto",
+          flex: 1, overflowY: "auto", overflowX: "hidden",
           padding: 16,
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
+          display: "flex", flexDirection: "column", gap: 12,
           justifyContent: "flex-start",
         }}
       >
-        {/* User message bubble */}
+        {/* User message */}
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <div
             style={{
               background: "#ebf0f5",
               borderRadius: "12px 12px 2px 12px",
-              padding: "12px 16px",
-              maxWidth: "100%",
-              fontSize: 14,
-              fontWeight: 425,
-              lineHeight: 1.55,
+              padding: "12px 16px", maxWidth: "100%",
+              fontSize: 14, fontWeight: 425, lineHeight: 1.55,
               color: "var(--content-primary)",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
+              whiteSpace: "pre-wrap", wordBreak: "break-word",
             }}
           >
             {userPrompt}
           </div>
         </div>
 
-        {/* CoT: Analyzing topic discovery */}
-        <motion.div
-          style={{ display: "flex", flexDirection: "column", gap: 12 }}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-        >
-          {/* CoT header row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {/* Breathing pulse wrapper */}
-            <motion.span
-              animate={{ opacity: [1, 0.65, 1] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-            >
-              <span
-                className="cot-shimmer-text"
-                style={{ fontSize: 14, fontWeight: 550, lineHeight: 1.55 }}
-              >
-                Analyzing topic discovery for relevant insights
-              </span>
-            </motion.span>
-            <span style={{ color: "var(--content-secondary)", flexShrink: 0 }}>
-              <ChevronDownIcon />
-            </span>
-          </div>
+        {/* CoT block */}
+        <AnimatePresence mode="wait" custom={dirRef.current}>
+          <motion.div
+            key={cotIndex}
+            custom={dirRef.current}
+            variants={slideVariants}
+            initial="enter" animate="center" exit="exit"
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            style={{ display: "flex", flexDirection: "column", gap: 12 }}
+          >
+            {/* CoT header — freezes once scene 2 tasks complete */}
+            {(() => {
+              const isDone = cotIndex === 2 && spinDone;
+              return (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {isDone ? (
+                    <span style={{ fontSize: 14, fontWeight: 550, lineHeight: 1.55, color: "var(--content-secondary)" }}>
+                      {SCENES[cotIndex].header}
+                    </span>
+                  ) : (
+                    <motion.span
+                      animate={{ opacity: [1, 0.65, 1] }}
+                      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                      style={{ display: "inline-flex", alignItems: "center" }}
+                    >
+                      <span className="cot-shimmer-text" style={{ fontSize: 14, fontWeight: 550, lineHeight: 1.55 }}>
+                        {SCENES[cotIndex].header}
+                      </span>
+                    </motion.span>
+                  )}
+                  <span style={{ color: "var(--content-secondary)", flexShrink: 0 }}>
+                    <ChevronDownIcon />
+                  </span>
+                </div>
+              );
+            })()}
 
-          {/* CoT body */}
-          <div style={{ display: "flex", gap: 12, paddingLeft: 6 }}>
-            {/* Vertical line */}
-            <div style={{ width: 1, background: "var(--border-default)", flexShrink: 0, borderRadius: 1 }} />
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {/* TODO: speedMs is a demo placeholder. In production, replace this
-                  Typewriter with a streaming text component that consumes tokens
-                  from the Claude backend as they arrive — the typing speed will
-                  naturally match the LLM's output rate. */}
-              <Typewriter
-                text="Scanning knowledge base for relevant topic clusters. Cross-referencing historical conversation patterns. Identifying high-signal themes for agent configuration."
-                mode="phrase"
-                phraseSize={3}
-                speedMs={90}
-                delayMs={400}
+            {/* CoT body */}
+            <div style={{ display: "flex", gap: 12, paddingLeft: 6 }}>
+              <div style={{ width: 1, background: "var(--border-default)", flexShrink: 0, borderRadius: 1 }} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+                {cotIndex === 0 && <TopicDiscoveryBody sceneKey={cotIndex} />}
+                {cotIndex === 1 && <FilesExploredBody />}
+                {cotIndex === 2 && <TodoTasksBody />}
+                {cotIndex === 3 && <GenericReasoningBody sceneKey={cotIndex} />}
+                {cotIndex === 4 && <AgentSectionsBody />}
+              </div>
+            </div>
+
+            {/* Navigation pill — appears after tasks complete in scene 2 */}
+            {cotIndex === 2 && spinDone && <NavigationPill done={navDone} />}
+
+            {/* Clarifying questions — appears once navigation completes */}
+            <AnimatePresence>
+              {cotIndex === 2 && navDone && <ClarifyingQuestions key="clarifying" />}
+            </AnimatePresence>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Scene indicator */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 4 }}>
+          <div style={{ display: "flex", gap: 5 }}>
+            {SCENES.map((_, i) => (
+              <motion.button
+                key={i}
+                onClick={() => { dirRef.current = i > cotIndex ? 1 : -1; setCotIndex(i); }}
+                animate={{ opacity: i === cotIndex ? 1 : 0.3 }}
+                transition={{ duration: 0.2 }}
                 style={{
-                  fontSize: 12,
-                  fontWeight: 400,
-                  lineHeight: 1.55,
-                  color: "var(--content-secondary)",
+                  width: i === cotIndex ? 16 : 6, height: 6,
+                  borderRadius: 99, background: "var(--content-action)",
+                  border: "none", padding: 0, cursor: "pointer",
+                  transition: "width 0.2s ease",
                 }}
               />
-              <AIAnalystIllustration />
-            </div>
+            ))}
           </div>
-        </motion.div>
+          <span style={{ fontSize: 10, color: "var(--content-secondary)", opacity: 0.5, letterSpacing: "0.02em" }}>
+            ← → to navigate
+          </span>
+        </div>
       </div>
 
       {/* Input bar */}
-      <div
-        style={{
-          background: "var(--background-elevation)",
-          padding: 16,
-          flexShrink: 0,
-        }}
-      >
+      <div style={{ background: "var(--background-elevation)", padding: 16, flexShrink: 0 }}>
         <div
           style={{
             background: "var(--background-surface)",
             border: "1px solid var(--border-default)",
-            borderRadius: 12,
-            padding: "8px 12px",
+            borderRadius: 12, padding: "8px 12px",
             boxShadow: "0px 8px 28px -6px rgba(24,39,75,0.12)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
+            display: "flex", flexDirection: "column", gap: 8,
           }}
         >
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask anything"
-            rows={1}
+            placeholder="Ask anything" rows={1}
             style={{
-              border: "none",
-              outline: "none",
-              resize: "none",
-              fontFamily: "Inter, sans-serif",
-              fontSize: 16,
-              lineHeight: 1.55,
-              color: "var(--content-primary)",
-              background: "transparent",
-              width: "100%",
-              minHeight: 28,
+              border: "none", outline: "none", resize: "none",
+              fontFamily: "Inter, sans-serif", fontSize: 16,
+              lineHeight: 1.55, color: "var(--content-primary)",
+              background: "transparent", width: "100%", minHeight: 28,
             }}
           />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <button
-              style={{ padding: 0, border: "none", background: "transparent", cursor: "pointer", color: "var(--content-action)", display: "flex" }}
-            >
+            <button style={{ padding: 0, border: "none", background: "transparent", cursor: "pointer", color: "var(--content-action)", display: "flex" }}>
               <PlusIcon />
             </button>
             <button
               style={{
-                width: 22,
-                height: 22,
-                borderRadius: "50%",
-                background: "var(--content-action)",
-                border: "none",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
+                width: 22, height: 22, borderRadius: "50%",
+                background: "var(--content-action)", border: "none", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
               }}
             >
               <ArrowUpIcon />

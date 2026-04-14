@@ -239,47 +239,41 @@ export const EASING = {
 
 ---
 
-## Demo scenarios
+## Running the demo
 
-Scenarios live in `src/data/scenarios/` as JSON files. Switching the active scenario is the only thing needed to change what plays — no code changes required.
+### 1. Start the app
 
-### Schema
-
-```ts
-interface Scenario {
-  id: string;
-  label: string;         // shown in ScenarioPicker UI
-  promptText: string;    // pre-filled in the chat input
-  steps: CotStep[];
-  finalAnswer?: string;  // closing assistant message after CoT
-}
-
-type CotStep =
-  | { kind: "topic_discovery"; delayAfterPrevious: number; payload: { topics: string[] } }
-  | { kind: "files_explored";  delayAfterPrevious: number; payload: { files: string[] } }
-  | { kind: "todos";           delayAfterPrevious: number; payload: { tasks: string[] } }
-  | { kind: "generic_text";    delayAfterPrevious: number; payload: { text: string } }
-  | { kind: "section_reference"; delayAfterPrevious: number; payload: { file: string; section: string; highlight: string } }
+```bash
+npm install
+npm run dev
 ```
 
-### Adding a new scenario
+Type anything in the input bar on the start screen and press **Enter** (or click the send button) to enter the builder.
 
-1. Create `src/data/scenarios/my-scenario.json` following the schema above
-2. Import and add it to `src/data/scenarios/index.ts`
-3. It will appear automatically in the `ScenarioPicker` dropdown — no other changes needed
+### 2. Navigate between animation types
 
-### Available scenarios
+Once inside the builder, use the **arrow keys** to step through all five chain-of-thought animation scenes in the Companion panel:
 
-| ID | Prompt | CoT patterns |
+| Key | Action |
+|---|---|
+| `→` Right arrow | Next animation scene |
+| `←` Left arrow | Previous animation scene |
+
+Dot indicators at the bottom of the Companion panel show which scene is active and are also **clickable**.
+
+### 3. Animation scenes (in order)
+
+| # | Scene | What you'll see |
 |---|---|---|
-| `topic-discovery` | "What topics does this agent cover?" | Topic Discovery |
-| `files-explored` | "Which files are being used by the agent?" | Files Explored |
-| `todos` | "What do I still need to set up?" | To-dos |
-| `generic-text` | "Explain what this agent does in plain language." | Generic Text |
-| `section-reference` | "Where does the agent decide to escalate?" | Section Reference |
-| `discovery-files` | "Scan the agent and tell me what knowledge it has." | Topic Discovery + Files |
-| `full-demo` | "Audit this agent and give me a full readiness report." | All 5 patterns |
-| `knowledge-deep-dive` | "How does the agent decide on a refund?" | Section Reference + Generic Text |
+| 1 | **Analyzing Topic Discovery** | Shimmer gradient header + AI Analyst illustration with gear-rotation bubbles |
+| 2 | **Exploring Knowledge Base Files** | Staggered file list with a live spinner on the last file, resolves to green |
+| 3 | **Tasks to Complete** | Checklist with done / active / pending states → navigation pill → auto-switches to Knowledge Base tab → clarifying questions card |
+| 4 | **Generic Reasoning** | Phrase-by-phrase typewriter text |
+| 5 | **Agent Referencing Sections** | Animated reference cards with source + excerpt |
+
+### 4. Adding or editing a scene
+
+All scene content is defined in the `SCENES` constant inside `src/components/companion/CompanionPanel.tsx`. Each entry has a `header` string and maps to a body component (`TopicDiscoveryBody`, `FilesExploredBody`, etc.). To add a new scene, append an entry to `SCENES` and create the corresponding body component.
 
 ---
 
