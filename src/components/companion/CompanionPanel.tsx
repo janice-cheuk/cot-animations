@@ -449,6 +449,211 @@ const REFERENCES = [
     excerpt: "\"Trigger clarification prompt when confidence < 0.65.\"",
   },
 ];
+// ── Scene 5 — Analyzing Trends & Anomalies ───────────────────────────────────
+
+// Trend line path traced from Figma (viewBox 0 0 333 104)
+const TREND_LINE = "M 0,84 L 48,63 L 88,75 L 134,50 L 180,66 L 226,40 L 270,46 L 306,26 L 333,30";
+const TREND_AREA = `${TREND_LINE} L 333,104 L 0,104 Z`;
+
+// Red dots appear at the two rightmost anomaly peaks
+const ANOMALY_DOTS = [
+  { cx: 226, cy: 40, appear: 0.6, disappear: 0.88 },
+  { cx: 306, cy: 26, appear: 0.78, disappear: 0.88 },
+];
+
+function TrendChart() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3, duration: 0.3, ease: "easeOut" }}
+      style={{
+        background: "white",
+        border: "1px solid var(--border-default)",
+        borderRadius: 8,
+        padding: "10px 10px 6px",
+        overflow: "hidden",
+      }}
+    >
+      <svg width="100%" viewBox="0 0 333 104" fill="none" style={{ display: "block" }}>
+        {/* Horizontal grid lines */}
+        {[20, 52, 84].map(y => (
+          <line key={y} x1="0" y1={y} x2="333" y2={y}
+            stroke="#e9ecef" strokeWidth="1" />
+        ))}
+
+        {/* Shaded area beneath the line */}
+        <path d={TREND_AREA} fill="rgba(90, 103, 216, 0.08)" />
+
+        {/* Animated trend line — draws left to right, loops */}
+        <motion.path
+          d={TREND_LINE}
+          stroke="#5a67d8"
+          strokeWidth="2"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: [0, 1, 1, 0] }}
+          transition={{
+            duration: 3.2,
+            times: [0, 0.58, 0.84, 1],
+            ease: "easeInOut",
+            repeat: Infinity,
+            repeatDelay: 0.3,
+          }}
+        />
+
+        {/* Anomaly dots — pop in when line reaches them, fade before reset */}
+        {ANOMALY_DOTS.map((dot, i) => (
+          <motion.circle
+            key={i}
+            cx={dot.cx} cy={dot.cy} r="5"
+            fill="#f03e3e"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{
+              opacity: [0, 0, 1, 1, 0],
+              scale:   [0, 0, 1, 1, 0],
+            }}
+            transition={{
+              duration: 3.2,
+              times: [0, dot.appear - 0.02, dot.appear + 0.06, dot.disappear, 1],
+              repeat: Infinity,
+              repeatDelay: 0.3,
+            }}
+          />
+        ))}
+      </svg>
+    </motion.div>
+  );
+}
+
+// ── Scene 7 — Analyzing closed conversations ──────────────────────────────────
+
+// Inset-to-pixel conversion for 195×183 container:
+// G1  inset(0  -0.01% 88.33% -0.02%) → x=0,   y=0,   w=195, h=21
+// G2  inset(15% -0.02% 63.33% 30.23%) → x=59,  y=27,  w=136, h=40
+// G3  inset(40% 48.32% 48.33% -0.02%) → x=0,   y=73,  w=101, h=21
+// G4  inset(55% -0.02% 23.33% 30.23%) → x=59,  y=101, w=136, h=40
+// G5  inset(80% 30.23% 3.33%  -0.02%) → x=0,   y=146, w=136, h=31
+
+// Staggered fade-in loop: 5 groups, each reveals in sequence then all fade out
+const CC_TOTAL = 3.2;   // full cycle duration (s)
+const CC_STAGGER = 0.18; // delay between each group appearing
+const CC_HOLD = 2.2 / CC_TOTAL;     // fraction where all are visible → start fade
+const CC_GONE = 2.8 / CC_TOTAL;     // fraction where all fade to 0
+
+function ccAnim(index: number) {
+  const fadeIn  = (index * CC_STAGGER) / CC_TOTAL;
+  const visible = Math.min(fadeIn + 0.10, CC_HOLD - 0.02);
+  return {
+    animate: { opacity: [0, 0, 1, 1, 0, 0] as number[] },
+    transition: {
+      duration: CC_TOTAL,
+      times: [0, fadeIn, visible, CC_HOLD, CC_GONE, 1],
+      ease: "easeOut" as const,
+      repeat: Infinity,
+      repeatDelay: 0.4,
+    },
+  };
+}
+
+function ClosedConversationsGraphic() {
+  return (
+    <div style={{
+      width: 195, height: 183,
+      position: "relative",
+      background: "#f8f9fa",
+      borderRadius: 8,
+      overflow: "hidden",
+      flexShrink: 0,
+    }}>
+      {/* G1 — grey block, 1 line, hugs content */}
+      <motion.div {...ccAnim(0)} style={{
+        position: "absolute", top: 4, left: 8,
+        width: "fit-content", height: 18,
+        background: "#CED4DA", borderRadius: 5,
+        padding: "0 8px", display: "flex", alignItems: "center",
+      }}>
+        <div style={{ height: 5, background: "#ADB5BD", borderRadius: 2, width: 118 }} />
+      </motion.div>
+
+      {/* G2 — white card, 3 lines, hugs content */}
+      <motion.div {...ccAnim(1)} style={{
+        position: "absolute", top: 28, left: 57,
+        width: "fit-content", height: 42,
+        background: "white", borderRadius: 6,
+        padding: "0 8px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4,
+      }}>
+        <div style={{ height: 6, background: "#DEE2E6", borderRadius: 3, width: 108 }} />
+        <div style={{ height: 6, background: "#DEE2E6", borderRadius: 3, width: 88 }} />
+        <div style={{ height: 6, background: "#DEE2E6", borderRadius: 3, width: 64 }} />
+      </motion.div>
+
+      {/* G3 — light-blue block, 1 line, hugs content */}
+      <motion.div {...ccAnim(2)} style={{
+        position: "absolute", top: 76, left: 8,
+        width: "fit-content", height: 19,
+        background: "#DBE4FF", borderRadius: 5,
+        padding: "0 8px", display: "flex", alignItems: "center",
+      }}>
+        <div style={{ height: 5, background: "#BAC8FF", borderRadius: 2, width: 68 }} />
+      </motion.div>
+
+      {/* G4 — white card, 3 lines, hugs content */}
+      <motion.div {...ccAnim(3)} style={{
+        position: "absolute", top: 101, left: 57,
+        width: "fit-content", height: 42,
+        background: "white", borderRadius: 6,
+        padding: "0 8px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4,
+      }}>
+        <div style={{ height: 6, background: "#DEE2E6", borderRadius: 3, width: 108 }} />
+        <div style={{ height: 6, background: "#DEE2E6", borderRadius: 3, width: 94 }} />
+        <div style={{ height: 6, background: "#DEE2E6", borderRadius: 3, width: 70 }} />
+      </motion.div>
+
+      {/* G5 — light blue block, 2 lines, hugs content */}
+      <motion.div {...ccAnim(4)} style={{
+        position: "absolute", top: 149, left: 8,
+        width: "fit-content", height: 28,
+        background: "#DBE4FF", borderRadius: 5,
+        padding: "0 8px", display: "flex", flexDirection: "column", justifyContent: "center", gap: 4,
+      }}>
+        <div style={{ height: 5, background: "#BAC8FF", borderRadius: 2, width: 102 }} />
+        <div style={{ height: 5, background: "#BAC8FF", borderRadius: 2, width: 72 }} />
+      </motion.div>
+    </div>
+  );
+}
+
+function ClosedConversationsBody({ sceneKey }: { sceneKey: number }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <Typewriter
+        key={sceneKey}
+        text="Reviewing closed dispute tickets and chat transcripts for resolution patterns. Extracting high-confidence handling sequences to inform agent behavior."
+        mode="phrase" phraseSize={3} speedMs={85} delayMs={300}
+        style={BODY_STYLE}
+      />
+      <ClosedConversationsGraphic />
+    </div>
+  );
+}
+
+function TrendsAnomaliesBody({ sceneKey }: { sceneKey: number }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <Typewriter
+        key={sceneKey}
+        text="Scanning historical interaction data for usage spikes and drop-off patterns. Two anomalies detected in billing dispute flow. Flagging high-volume edge cases for prioritization."
+        mode="phrase" phraseSize={3} speedMs={85} delayMs={300}
+        style={BODY_STYLE}
+      />
+      <TrendChart />
+    </div>
+  );
+}
+
 function AgentSectionsBody() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -484,11 +689,13 @@ function AgentSectionsBody() {
 // ── Scene definitions ────────────────────────────────────────────────────────
 
 const SCENES = [
-  { id: "topic-discovery", header: "Analyzing topic discovery for relevant insights" },
-  { id: "files-explored",  header: "Exploring relevant knowledge base files" },
-  { id: "todos-tasks",     header: "Thinking" },
-  { id: "generic-text",    header: "Generating agent response strategy" },
-  { id: "agent-sections",  header: "Referencing relevant agent patterns" },
+  { id: "topic-discovery",    header: "Analyzing topic discovery for relevant insights" },
+  { id: "files-explored",     header: "Exploring relevant knowledge base files" },
+  { id: "todos-tasks",        header: "Thinking" },
+  { id: "generic-text",       header: "Generating agent response strategy" },
+  { id: "agent-sections",     header: "Referencing relevant agent patterns" },
+  { id: "trends-anomalies",        header: "Analyzing trends and anomalies" },
+  { id: "closed-conversations",    header: "Analyzing closed conversations" },
 ] as const;
 
 // ── Main component ───────────────────────────────────────────────────────────
@@ -531,7 +738,7 @@ export function CompanionPanel({ userPrompt, onNavigateKB }: CompanionPanelProps
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.key === "ArrowRight") {
         dirRef.current = 1;
-        setCotIndex(i => Math.min(i + 1, SCENES.length - 1));
+        setCotIndex(i => Math.min(i + 1, 6));
       } else if (e.key === "ArrowLeft") {
         dirRef.current = -1;
         setCotIndex(i => Math.max(i - 1, 0));
@@ -650,6 +857,8 @@ export function CompanionPanel({ userPrompt, onNavigateKB }: CompanionPanelProps
                 {cotIndex === 2 && <TodoTasksBody />}
                 {cotIndex === 3 && <GenericReasoningBody sceneKey={cotIndex} />}
                 {cotIndex === 4 && <AgentSectionsBody />}
+                {cotIndex === 5 && <TrendsAnomaliesBody sceneKey={cotIndex} />}
+                {cotIndex === 6 && <ClosedConversationsBody sceneKey={cotIndex} />}
               </div>
             </div>
 

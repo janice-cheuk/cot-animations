@@ -21,7 +21,7 @@ function PullIcon() {
       <circle cx="10.5" cy="3.5" r="1.5" stroke="currentColor" strokeWidth="1.2" />
       <path d="M3.5 5V9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
       <path d="M10.5 5v1.5a2 2 0 01-2 2H5.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M3.5 8.5L5 10l-1.5 1.5" stroke="currentColor" strokeWidth="0" />
+      <path d="M8 7.5l-2.5 2 2.5 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -245,7 +245,7 @@ export function BuilderPage({ prompt }: BuilderPageProps) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "16px 24px 0 16px",
+            padding: "20px 24px 0 16px",
             flexShrink: 0,
           }}
         >
@@ -264,22 +264,14 @@ export function BuilderPage({ prompt }: BuilderPageProps) {
               <span style={{ color: "#099268" }}><ChevronDownIcon /></span>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            {/* Pull — pill shaped, border, icon right */}
-            <button style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "4px 12px", borderRadius: 9999, border: "1px solid var(--border-default)",
-              background: "white", cursor: "pointer", fontSize: 12, fontWeight: 550, color: "var(--content-primary)",
-            }}>
-              Pull <PullIcon />
-            </button>
-            {/* Push — pill shaped, blue, chevron-down right */}
+          <div style={{ display: "flex", gap: 4 }}>
+            {/* Open PR — blue pill, git-pull-request icon on right */}
             <button style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "4px 12px", borderRadius: 9999, border: "none",
               background: "var(--content-action)", cursor: "pointer", fontSize: 12, fontWeight: 550, color: "white",
             }}>
-              Push <PushChevronIcon />
+              Open PR <PullIcon />
             </button>
           </div>
         </div>
@@ -293,7 +285,7 @@ export function BuilderPage({ prompt }: BuilderPageProps) {
             borderBottom: "1px solid var(--border-default)",
             padding: "0 16px",
             flexShrink: 0,
-            marginTop: 4,
+            marginTop: 12,
           }}
         >
           <div style={{ display: "flex", gap: 16 }}>
