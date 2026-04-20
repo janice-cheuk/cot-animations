@@ -189,17 +189,29 @@ import { ThinkingDots } from "@/engine/primitives/ThinkingDots";
 
 ## Layer 2 — CoT pattern components
 
-Each component maps to one chain-of-thought pattern. They are composed from the primitives above and accept typed `payload` props that match the scenario JSON schema.
+Each component maps to one chain-of-thought pattern. In this prototype they live as named functions inside `src/components/companion/CompanionPanel.tsx`. When integrating into the real repo, each should be extracted to its own file under `src/components/cot/<Name>.tsx` and connected to live backend data.
 
-| Component | Pattern | Primitives used |
+| Body component | Scene | Key animation technique |
 |---|---|---|
-| `<TopicDiscoveryStep>` | Analyzing Topic Discovery | `StaggerList`, `FadeSlideIn` |
-| `<FilesExploredStep>` | Files Explored | `StaggerList`, `FadeSlideIn` |
-| `<TodosStep>` | To-dos / Tasks | `StaggerList`, `FadeSlideIn` |
-| `<GenericTextStep>` | Generic text | `Typewriter`, `FadeSlideIn` |
-| `<SectionReferenceStep>` | Agent referencing sections | `FadeSlideIn` |
+| `TopicDiscoveryBody` | Analyzing topic discovery | CSS `@keyframes` shimmer gradient on the CoT header; SVG `animateTransform` gear rotation + Framer Motion `scaleY` breathing on the AI Analyst illustration |
+| `FilesExploredBody` | Exploring knowledge base files | Framer Motion staggered list reveal; `motion.svg` spinner on the active file |
+| `TodoTasksBody` | Thinking (tasks) | Staggered checklist; timed spinner → nav pill → tab navigation → clarifying questions card |
+| `GenericReasoningBody` | Generating response strategy | `<Typewriter>` in `phrase` mode (3-word chunks) |
+| `AgentSectionsBody` | Referencing agent patterns | Staggered `motion.div` reference cards with fade + slide entrance |
+| `TrendsAnomaliesBody` | Analyzing trends & anomalies | Framer Motion `pathLength` on an SVG path to draw the trend line left-to-right; opacity-animated anomaly dots |
+| `ClosedConversationsBody` | Analyzing closed conversations | Five `motion.div` document rows with a staggered `opacity` keyframe loop (`[0,0,1,1,0,0]`) — each fades in, holds, then fades out before the next cycle |
+| `AutomationDiscoveryBody` | Utilizing automation discovery | Vertical timeline with timed spinner → icon swap (`AnimatePresence` cross-fade); continuous connector line for icon-less steps |
 
-Each lives at `src/components/cot/<Name>.tsx`. Prop types are defined in `src/engine/types.ts`.
+### Connecting to the backend
+
+Each body component currently renders **hardcoded content**. When wiring to a real agent:
+
+- Replace the static text in `<Typewriter text="...">` with the streamed string from the agent's reasoning output.
+- Replace hardcoded file lists / task lists / reference arrays with data from the agent's tool-call responses.
+- The `spinDone` / `navDone` state pattern (used in `FilesExploredBody` and `TodoTasksBody`) should be driven by real tool-call completion events rather than `setTimeout`.
+- The tab navigation triggered by `onNavigateKB()` is already a callback prop — wire it to whatever routing/state system the real app uses.
+
+> **Spinner convention:** All active/loading states use the `AISpinner` component (a 12 × 12 rotating SVG arc). Scene 8 uses a scaled-up variant `ADSpinner` (16 × 16) to match the 18 × 18 icon container. Both use the same blue `#205ae3` arc on a light grey track.
 
 ---
 
@@ -263,17 +275,27 @@ Dot indicators at the bottom of the Companion panel show which scene is active a
 
 ### 3. Animation scenes (in order)
 
-| # | Scene | What you'll see |
+| # | Scene header | What you'll see |
 |---|---|---|
-| 1 | **Analyzing Topic Discovery** | Shimmer gradient header + AI Analyst illustration with gear-rotation bubbles |
-| 2 | **Exploring Knowledge Base Files** | Staggered file list with a live spinner on the last file, resolves to green |
-| 3 | **Tasks to Complete** | Checklist with done / active / pending states → navigation pill → auto-switches to Knowledge Base tab → clarifying questions card |
-| 4 | **Generic Reasoning** | Phrase-by-phrase typewriter text |
-| 5 | **Agent Referencing Sections** | Animated reference cards with source + excerpt |
+| 1 | **Analyzing topic discovery for relevant insights** | Shimmer gradient CoT header + AI Analyst illustration with three outer bubbles rotating like gears and inner bubbles breathing |
+| 2 | **Exploring relevant knowledge base files** | Staggered file list, live spinner on the last file that settles to a done state |
+| 3 | **Thinking** | Checklist of tasks with done / active / pending states → navigation pill → auto-switches the main panel to the Knowledge Base tab → clarifying questions card fades in |
+| 4 | **Generating agent response strategy** | Phrase-by-phrase typewriter text streaming |
+| 5 | **Referencing relevant agent patterns** | Staggered reference cards each showing a source file path and a quoted excerpt |
+| 6 | **Analyzing trends and anomalies** | Typewriter text + line chart where the trend line animates left-to-right in a loop with two anomaly dots appearing at peaks |
+| 7 | **Analyzing closed conversations** | Typewriter text + stacked document graphic where each row fades in sequentially, holds, then fades out in a loop |
+| 8 | **Utilizing automation discovery** | Vertical timeline: each step fades in one by one with a spinning loader, then the loader resolves to the step's icon once complete; the last step keeps spinning to indicate work in progress |
 
 ### 4. Adding or editing a scene
 
-All scene content is defined in the `SCENES` constant inside `src/components/companion/CompanionPanel.tsx`. Each entry has a `header` string and maps to a body component (`TopicDiscoveryBody`, `FilesExploredBody`, etc.). To add a new scene, append an entry to `SCENES` and create the corresponding body component.
+All scene content is defined in the `SCENES` constant inside `src/components/companion/CompanionPanel.tsx`. Each entry has a `header` string and maps to a body component. To add a new scene:
+
+1. Append an entry to the `SCENES` array — the `header` string becomes the animated CoT header text.
+2. Create the body component (e.g. `MyNewBody`) anywhere in the file following the same pattern as the existing body components.
+3. Add a `{cotIndex === N && <MyNewBody sceneKey={cotIndex} />}` case to the render block.
+4. Update the `Math.min(i + 1, N)` cap in the keyboard handler to the new maximum index.
+
+> **Note:** The `sceneKey` prop is passed to `Typewriter` and other stateful sub-components as a `key` prop so they reset cleanly on every scene transition.
 
 ---
 

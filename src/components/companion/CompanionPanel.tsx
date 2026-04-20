@@ -654,6 +654,177 @@ function TrendsAnomaliesBody({ sceneKey }: { sceneKey: number }) {
   );
 }
 
+// ── Scene 8 — Utilizing automation discovery ──────────────────────────────────
+
+// Exact Tabler "writing" icon paths, scaled to 18×18
+function WritingIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M20 17v-12c0 -1.121 -.879 -2 -2 -2s-2 .879 -2 2v12l2 2l2 -2" />
+      <path d="M16 7h4" />
+      <path d="M18 19h-13a2 2 0 1 1 0 -4h4a2 2 0 1 0 0 -4h-3" />
+    </svg>
+  );
+}
+
+// Exact Tabler "analyze" icon paths, scaled to 18×18
+function AnalyzeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M20 11a8.1 8.1 0 0 0 -6.986 -6.918a8.095 8.095 0 0 0 -8.019 3.918" />
+      <path d="M4 13a8.1 8.1 0 0 0 15 3" />
+      <path d="M18 16a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+      <path d="M4 8a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+      <path d="M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+    </svg>
+  );
+}
+
+// Exact Tabler "chart-pie" icon paths, scaled to 18×18
+function ChartPieIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 3.2a9 9 0 1 0 10.8 10.8a1 1 0 0 0 -1 -1h-6.8a2 2 0 0 1 -2 -2v-7a.9 .9 0 0 0 -1 -.8" />
+      <path d="M15 3.5a9 9 0 0 1 5.5 5.5h-4.5a1 1 0 0 1 -1 -1v-4.5" />
+    </svg>
+  );
+}
+
+// Spinner sized to match the 18×18 icon container
+function ADSpinner() {
+  return (
+    <motion.svg
+      width="16" height="16" viewBox="0 0 16 16" fill="none"
+      animate={{ rotate: 360 }}
+      transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }}
+    >
+      <circle cx="8" cy="8" r="6" stroke="#dee5eb" strokeWidth="1.6" />
+      <path d="M8 2A6 6 0 0 1 14 8" stroke="#205ae3" strokeWidth="1.6" strokeLinecap="round" />
+    </motion.svg>
+  );
+}
+
+const AD_ROWS: Array<{
+  label: string;
+  icon: React.ReactNode | null;
+  hasIcon: boolean;
+  settleIndex: number | null;
+}> = [
+  { label: "Extracting the core flow",                                   icon: <WritingIcon />,  hasIcon: true,  settleIndex: 0    },
+  { label: "Step 1 of 2: Loading and analyzing conversations",           icon: <AnalyzeIcon />,  hasIcon: true,  settleIndex: 1    },
+  { label: "Step 2 of 2: Extracting phases and categorizing deviations", icon: null,             hasIcon: false, settleIndex: null },
+  { label: "Computing deviations",                                        icon: <ChartPieIcon />, hasIcon: true,  settleIndex: null },
+];
+
+// (s) each row fades in after mount
+const AD_APPEAR = [0.25, 1.5, 2.1, 3.0];
+
+// Row height (px) used to size the connector lines so the icon center lines up with the text
+const AD_ROW_H = 34;
+const AD_ICON_H = 18;
+const AD_CONNECTOR_H = (AD_ROW_H - AD_ICON_H) / 2 - 1; // ~7px each side
+
+function AutomationDiscoveryBody({ sceneKey }: { sceneKey: number }) {
+  const [settledStep, setSettledStep] = useState(-1);
+
+  useEffect(() => {
+    setSettledStep(-1);
+    const t1 = setTimeout(() => setSettledStep(0), 1400);
+    const t2 = setTimeout(() => setSettledStep(1), 2800);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [sceneKey]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      {/* Timeline rows */}
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {AD_ROWS.map((row, i) => {
+          const isFirst = i === 0;
+          const isLast  = i === AD_ROWS.length - 1;
+          const settled = row.settleIndex !== null && settledStep >= row.settleIndex;
+
+          return (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -4 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: AD_APPEAR[i], duration: 0.28, ease: "easeOut" }}
+              style={{ display: "flex", alignItems: "center" }}
+            >
+              {/* ── Left connector + icon column (32px wide) ── */}
+              <div style={{
+                width: 32, flexShrink: 0,
+                display: "flex", flexDirection: "column", alignItems: "center",
+                alignSelf: "stretch",
+              }}>
+                {row.hasIcon ? (
+                  <>
+                    {/* line above icon */}
+                    <div style={{
+                      width: 2, flexShrink: 0,
+                      height: isFirst ? 0 : AD_CONNECTOR_H,
+                      background: "#DEE2E6",
+                    }} />
+                    {/* 18×18 icon box — both spinner and icon are centred inside */}
+                    <div style={{
+                      width: 18, height: 18, flexShrink: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "var(--content-secondary)",
+                    }}>
+                      <AnimatePresence mode="wait">
+                        {settled ? (
+                          <motion.span key="icon"
+                            initial={{ opacity: 0, scale: 0.75 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.22 }}
+                            style={{ display: "flex" }}
+                          >
+                            {row.icon}
+                          </motion.span>
+                        ) : (
+                          <motion.span key="spin"
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            transition={{ duration: 0.18 }}
+                            style={{ display: "flex" }}
+                          >
+                            <ADSpinner />
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    {/* line below icon */}
+                    {!isLast && (
+                      <div style={{ width: 2, flex: 1, minHeight: AD_CONNECTOR_H, background: "#DEE2E6" }} />
+                    )}
+                  </>
+                ) : (
+                  /* no-icon row (Step 2 of 2): just a continuous connector */
+                  <div style={{ width: 2, flex: 1, background: "#DEE2E6" }} />
+                )}
+              </div>
+
+              {/* ── Text ── */}
+              <div style={{
+                paddingLeft: 8,
+                paddingTop: row.hasIcon ? 6 : 2,
+                paddingBottom: row.hasIcon ? 6 : 8,
+                display: "flex", alignItems: "center",
+              }}>
+                <span style={{ fontSize: 12, color: "var(--content-secondary)", lineHeight: 1.45 }}>
+                  {row.label}
+                </span>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function AgentSectionsBody() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -694,8 +865,9 @@ const SCENES = [
   { id: "todos-tasks",        header: "Thinking" },
   { id: "generic-text",       header: "Generating agent response strategy" },
   { id: "agent-sections",     header: "Referencing relevant agent patterns" },
-  { id: "trends-anomalies",        header: "Analyzing trends and anomalies" },
-  { id: "closed-conversations",    header: "Analyzing closed conversations" },
+  { id: "trends-anomalies",         header: "Analyzing trends and anomalies" },
+  { id: "closed-conversations",     header: "Analyzing closed conversations" },
+  { id: "automation-discovery",     header: "Utilizing automation discovery" },
 ] as const;
 
 // ── Main component ───────────────────────────────────────────────────────────
@@ -738,7 +910,7 @@ export function CompanionPanel({ userPrompt, onNavigateKB }: CompanionPanelProps
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.key === "ArrowRight") {
         dirRef.current = 1;
-        setCotIndex(i => Math.min(i + 1, 6));
+        setCotIndex(i => Math.min(i + 1, 7));
       } else if (e.key === "ArrowLeft") {
         dirRef.current = -1;
         setCotIndex(i => Math.max(i - 1, 0));
@@ -859,6 +1031,7 @@ export function CompanionPanel({ userPrompt, onNavigateKB }: CompanionPanelProps
                 {cotIndex === 4 && <AgentSectionsBody />}
                 {cotIndex === 5 && <TrendsAnomaliesBody sceneKey={cotIndex} />}
                 {cotIndex === 6 && <ClosedConversationsBody sceneKey={cotIndex} />}
+                {cotIndex === 7 && <AutomationDiscoveryBody sceneKey={cotIndex} />}
               </div>
             </div>
 
