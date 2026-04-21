@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Typewriter } from "../../engine/primitives/Typewriter";
 import { AIAnalystIllustration } from "./AIAnalystIllustration";
+import type { SceneDef } from "../../data/flows";
 
 // ── Icon components ──────────────────────────────────────────────────────────
 
@@ -857,52 +858,47 @@ function AgentSectionsBody() {
   );
 }
 
-// ── Scene definitions ────────────────────────────────────────────────────────
-
-const SCENES = [
-  { id: "topic-discovery",    header: "Analyzing topic discovery for relevant insights" },
-  { id: "files-explored",     header: "Exploring relevant knowledge base files" },
-  { id: "todos-tasks",        header: "Thinking" },
-  { id: "generic-text",       header: "Generating agent response strategy" },
-  { id: "agent-sections",     header: "Referencing relevant agent patterns" },
-  { id: "trends-anomalies",         header: "Analyzing trends and anomalies" },
-  { id: "closed-conversations",     header: "Analyzing closed conversations" },
-  { id: "automation-discovery",     header: "Utilizing automation discovery" },
-] as const;
-
 // ── Main component ───────────────────────────────────────────────────────────
 
 interface CompanionPanelProps {
   userPrompt: string;
+  scenes: SceneDef[];
   onNavigateKB?: () => void;
 }
 
-export function CompanionPanel({ userPrompt, onNavigateKB }: CompanionPanelProps) {
+export function CompanionPanel({ userPrompt, scenes, onNavigateKB }: CompanionPanelProps) {
   const [inputValue, setInputValue] = useState("");
   const [cotIndex, setCotIndex] = useState(0);
   const dirRef = useRef(1);
   const [spinDone, setSpinDone] = useState(false);
   const [navDone, setNavDone] = useState(false);
 
-  // Reset and re-arm when entering scene 2 (Tasks to complete)
+  // Keep a ref so the keyboard handler always sees the current scenes length
+  // without needing to re-register the event listener on every render.
+  const scenesRef = useRef(scenes);
+  useEffect(() => { scenesRef.current = scenes; }, [scenes]);
+
+  const currentId = scenes[cotIndex]?.id;
+
+  // Reset and re-arm when the active scene changes
   useEffect(() => {
     setSpinDone(false);
     setNavDone(false);
-    if (cotIndex === 2) {
+    if (currentId === "todos-tasks") {
       const t = setTimeout(() => setSpinDone(true), 2500);
       return () => clearTimeout(t);
     }
-  }, [cotIndex]);
+  }, [cotIndex, currentId]);
 
   useEffect(() => {
-    if (spinDone && cotIndex === 2 && onNavigateKB) {
+    if (spinDone && currentId === "todos-tasks" && onNavigateKB) {
       const t = setTimeout(() => {
         onNavigateKB();
         setNavDone(true);
       }, 1200);
       return () => clearTimeout(t);
     }
-  }, [spinDone, cotIndex, onNavigateKB]);
+  }, [spinDone, currentId, onNavigateKB]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -910,7 +906,7 @@ export function CompanionPanel({ userPrompt, onNavigateKB }: CompanionPanelProps
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.key === "ArrowRight") {
         dirRef.current = 1;
-        setCotIndex(i => Math.min(i + 1, 7));
+        setCotIndex(i => Math.min(i + 1, scenesRef.current.length - 1));
       } else if (e.key === "ArrowLeft") {
         dirRef.current = -1;
         setCotIndex(i => Math.max(i - 1, 0));
@@ -993,14 +989,15 @@ export function CompanionPanel({ userPrompt, onNavigateKB }: CompanionPanelProps
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             style={{ display: "flex", flexDirection: "column", gap: 12 }}
           >
-            {/* CoT header — freezes once scene 2 tasks complete */}
+            {/* CoT header — freezes once the todos-tasks scene completes */}
             {(() => {
-              const isDone = cotIndex === 2 && spinDone;
+              const isDone = currentId === "todos-tasks" && spinDone;
+              const header = scenes[cotIndex]?.header ?? "";
               return (
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {isDone ? (
                     <span style={{ fontSize: 14, fontWeight: 550, lineHeight: 1.55, color: "var(--content-secondary)" }}>
-                      {SCENES[cotIndex].header}
+                      {header}
                     </span>
                   ) : (
                     <motion.span
@@ -1009,7 +1006,7 @@ export function CompanionPanel({ userPrompt, onNavigateKB }: CompanionPanelProps
                       style={{ display: "inline-flex", alignItems: "center" }}
                     >
                       <span className="cot-shimmer-text" style={{ fontSize: 14, fontWeight: 550, lineHeight: 1.55 }}>
-                        {SCENES[cotIndex].header}
+                        {header}
                       </span>
                     </motion.span>
                   )}
@@ -1024,23 +1021,23 @@ export function CompanionPanel({ userPrompt, onNavigateKB }: CompanionPanelProps
             <div style={{ display: "flex", gap: 12, paddingLeft: 6 }}>
               <div style={{ width: 1, background: "var(--border-default)", flexShrink: 0, borderRadius: 1 }} />
               <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-                {cotIndex === 0 && <TopicDiscoveryBody sceneKey={cotIndex} />}
-                {cotIndex === 1 && <FilesExploredBody />}
-                {cotIndex === 2 && <TodoTasksBody />}
-                {cotIndex === 3 && <GenericReasoningBody sceneKey={cotIndex} />}
-                {cotIndex === 4 && <AgentSectionsBody />}
-                {cotIndex === 5 && <TrendsAnomaliesBody sceneKey={cotIndex} />}
-                {cotIndex === 6 && <ClosedConversationsBody sceneKey={cotIndex} />}
-                {cotIndex === 7 && <AutomationDiscoveryBody sceneKey={cotIndex} />}
+                {currentId === "topic-discovery"    && <TopicDiscoveryBody sceneKey={cotIndex} />}
+                {currentId === "files-explored"     && <FilesExploredBody />}
+                {currentId === "todos-tasks"         && <TodoTasksBody />}
+                {currentId === "generic-text"        && <GenericReasoningBody sceneKey={cotIndex} />}
+                {currentId === "agent-sections"      && <AgentSectionsBody />}
+                {currentId === "trends-anomalies"    && <TrendsAnomaliesBody sceneKey={cotIndex} />}
+                {currentId === "closed-conversations" && <ClosedConversationsBody sceneKey={cotIndex} />}
+                {currentId === "automation-discovery" && <AutomationDiscoveryBody sceneKey={cotIndex} />}
               </div>
             </div>
 
-            {/* Navigation pill — appears after tasks complete in scene 2 */}
-            {cotIndex === 2 && spinDone && <NavigationPill done={navDone} />}
+            {/* Navigation pill — appears after todos-tasks scene completes */}
+            {currentId === "todos-tasks" && spinDone && <NavigationPill done={navDone} />}
 
             {/* Clarifying questions — appears once navigation completes */}
             <AnimatePresence>
-              {cotIndex === 2 && navDone && <ClarifyingQuestions key="clarifying" />}
+              {currentId === "todos-tasks" && navDone && <ClarifyingQuestions key="clarifying" />}
             </AnimatePresence>
           </motion.div>
         </AnimatePresence>
@@ -1048,7 +1045,7 @@ export function CompanionPanel({ userPrompt, onNavigateKB }: CompanionPanelProps
         {/* Scene indicator */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 4 }}>
           <div style={{ display: "flex", gap: 5 }}>
-            {SCENES.map((_, i) => (
+            {scenes.map((_, i) => (
               <motion.button
                 key={i}
                 onClick={() => { dirRef.current = i > cotIndex ? 1 : -1; setCotIndex(i); }}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CompanionPanel } from "../companion/CompanionPanel";
+import type { Flow } from "../../data/flows";
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -222,9 +223,10 @@ function KnowledgeBasePanel() {
 
 interface BuilderPageProps {
   prompt: string;
+  flow: Flow;
 }
 
-export function BuilderPage({ prompt }: BuilderPageProps) {
+export function BuilderPage({ prompt, flow }: BuilderPageProps) {
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>("Plan");
 
   const handleNavigateKB = () => setActiveTab("Knowledge Base");
@@ -359,7 +361,7 @@ export function BuilderPage({ prompt }: BuilderPageProps) {
           </div>
 
           {/* Companion panel */}
-          <CompanionPanel userPrompt={prompt} onNavigateKB={handleNavigateKB} />
+          <CompanionPanel userPrompt={prompt} scenes={flow.scenes} onNavigateKB={handleNavigateKB} />
         </div>
       </div>
     </div>

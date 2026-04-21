@@ -286,14 +286,33 @@ Dot indicators at the bottom of the Companion panel show which scene is active a
 | 7 | **Analyzing closed conversations** | Typewriter text + stacked document graphic where each row fades in sequentially, holds, then fades out in a loop |
 | 8 | **Utilizing automation discovery** | Vertical timeline: each step fades in one by one with a spinning loader, then the loader resolves to the step's icon once complete; the last step keeps spinning to indicate work in progress |
 
-### 4. Adding or editing a scene
+### 4. Switching flows with the Demo Controller
 
-All scene content is defined in the `SCENES` constant inside `src/components/companion/CompanionPanel.tsx`. Each entry has a `header` string and maps to a body component. To add a new scene:
+A floating overlay in the **bottom-left corner** (dark badge with a ⚡ icon) lets you switch between pre-defined flows without reloading the page.
 
-1. Append an entry to the `SCENES` array — the `header` string becomes the animated CoT header text.
-2. Create the body component (e.g. `MyNewBody`) anywhere in the file following the same pattern as the existing body components.
-3. Add a `{cotIndex === N && <MyNewBody sceneKey={cotIndex} />}` case to the render block.
-4. Update the `Math.min(i + 1, N)` cap in the keyboard handler to the new maximum index.
+> **This widget is not part of the product UI.** It is a demo-only tool. Remove the `<DemoController />` line from `src/App.tsx` to hide it from any build you share externally.
+
+Click the badge to expand the flow picker, then select a flow. The companion panel resets to scene 1 of the new flow automatically.
+
+Available flows (defined in `src/data/flows.ts`):
+
+| Flow | Scenes |
+|---|---|
+| **Full demo** | All 8 CoT scenes in order |
+| **Dispute resolution** | Topic discovery → KB files → Tasks + KB navigation |
+| **Analytics** | Trends & anomalies → Closed conversations |
+| **Automation discovery** | Topic discovery → Automation discovery |
+
+To add a new flow, append an entry to the `FLOWS` array in `src/data/flows.ts` — no changes to any component are needed.
+
+### 5. Adding or editing a scene
+
+All scene content is defined in `src/data/flows.ts` (the scene catalogue) and the body components in `src/components/companion/CompanionPanel.tsx`. To add a new scene:
+
+1. Add the new scene ID and header to the `S` catalogue in `src/data/flows.ts`, then reference it in your chosen `Flow`.
+2. Create the body component (e.g. `MyNewBody`) in `src/components/companion/CompanionPanel.tsx` following the same pattern as existing body components.
+3. Add a `{currentId === "my-scene-id" && <MyNewBody sceneKey={cotIndex} />}` case to the render block.
+4. No keyboard-nav cap change needed — the max is now `scenes.length - 1` automatically.
 
 > **Note:** The `sceneKey` prop is passed to `Typewriter` and other stateful sub-components as a `key` prop so they reset cleanly on every scene transition.
 
