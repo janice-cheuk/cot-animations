@@ -20,7 +20,7 @@ export default function App() {
 
   return (
     <div
-      style={{ height: "100vh", display: "flex", background: "var(--background-elevation)" }}
+      style={{ height: "100vh", display: "flex", background: "white" }}
     >
       <NavSidebar />
 

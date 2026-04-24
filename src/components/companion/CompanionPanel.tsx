@@ -2,9 +2,29 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Typewriter } from "../../engine/primitives/Typewriter";
 import { AIAnalystIllustration } from "./AIAnalystIllustration";
+import { CustomerDiscoveryBody } from "./CustomerDiscoveryBody";
+import { TestRunScoreboardBody } from "./TestRunScoreboardBody";
+import { KBSearchBody } from "./KBSearchBody";
+import { WebhookInvocationBody } from "./WebhookInvocationBody";
 import type { SceneDef } from "../../data/flows";
 
 // ── Icon components ──────────────────────────────────────────────────────────
+
+function SystemChecksIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.3" strokeDasharray="2.5 2" />
+    </svg>
+  );
+}
+
+function AdvancedIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M4.5 4L1.5 7L4.5 10M9.5 4L12.5 7L9.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 function HistoryIcon() {
   return (
@@ -469,10 +489,11 @@ function TrendChart() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3, duration: 0.3, ease: "easeOut" }}
       style={{
+        maxWidth: 300,
         background: "white",
         border: "1px solid var(--border-default)",
         borderRadius: 8,
-        padding: "10px 10px 6px",
+        padding: "8px 8px 5px",
         overflow: "hidden",
       }}
     >
@@ -926,10 +947,11 @@ export function CompanionPanel({ userPrompt, scenes, onNavigateKB }: CompanionPa
     <div
       style={{
         display: "flex", flexDirection: "column",
-        width: 380, height: "100%",
+        width: "100%", height: "100%",
         background: "var(--background-elevation)",
         border: "1px solid var(--border-default)",
-        borderRadius: 12, overflow: "hidden", flexShrink: 0,
+        borderRadius: 12,
+        overflow: "hidden", flexShrink: 0,
       }}
     >
       {/* Panel header */}
@@ -942,14 +964,21 @@ export function CompanionPanel({ userPrompt, scenes, onNavigateKB }: CompanionPa
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: 16, fontWeight: 550, color: "var(--content-secondary)" }}>Companion</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <button style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", color: "var(--content-secondary)", display: "flex" }}>
-            <HistoryIcon />
+        <span style={{ fontSize: 14, fontWeight: 550, color: "var(--content-secondary)" }}>Companion</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "5px 10px",
+            borderRadius: 6, border: "1px solid var(--border-default)", background: "white",
+            cursor: "pointer", fontSize: 12, fontWeight: 550, color: "var(--content-primary)",
+          }}>
+            <SystemChecksIcon /> System Checks
           </button>
-          <div style={{ width: 1, height: 16, background: "var(--border-default)" }} />
-          <button style={{ padding: 4, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", color: "var(--content-secondary)", display: "flex" }}>
-            <CollapseIcon />
+          <button style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "5px 10px",
+            borderRadius: 6, border: "1px solid var(--border-default)", background: "white",
+            cursor: "pointer", fontSize: 12, fontWeight: 550, color: "var(--content-primary)",
+          }}>
+            Advanced <AdvancedIcon />
           </button>
         </div>
       </div>
@@ -1020,7 +1049,7 @@ export function CompanionPanel({ userPrompt, scenes, onNavigateKB }: CompanionPa
             {/* CoT body */}
             <div style={{ display: "flex", gap: 12, paddingLeft: 6 }}>
               <div style={{ width: 1, background: "var(--border-default)", flexShrink: 0, borderRadius: 1 }} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
                 {currentId === "topic-discovery"    && <TopicDiscoveryBody sceneKey={cotIndex} />}
                 {currentId === "files-explored"     && <FilesExploredBody />}
                 {currentId === "todos-tasks"         && <TodoTasksBody />}
@@ -1029,6 +1058,10 @@ export function CompanionPanel({ userPrompt, scenes, onNavigateKB }: CompanionPa
                 {currentId === "trends-anomalies"    && <TrendsAnomaliesBody sceneKey={cotIndex} />}
                 {currentId === "closed-conversations" && <ClosedConversationsBody sceneKey={cotIndex} />}
                 {currentId === "automation-discovery" && <AutomationDiscoveryBody sceneKey={cotIndex} />}
+                {currentId === "customer-discovery"  && <CustomerDiscoveryBody  sceneKey={cotIndex} />}
+                {currentId === "test-run-scoreboard" && <TestRunScoreboardBody  sceneKey={cotIndex} />}
+                {currentId === "kb-search"           && <KBSearchBody           sceneKey={cotIndex} />}
+                {currentId === "webhook-invocation"  && <WebhookInvocationBody  sceneKey={cotIndex} />}
               </div>
             </div>
 

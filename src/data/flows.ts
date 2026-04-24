@@ -18,7 +18,11 @@ export type SceneId =
   | "agent-sections"
   | "trends-anomalies"
   | "closed-conversations"
-  | "automation-discovery";
+  | "automation-discovery"
+  | "customer-discovery"
+  | "test-run-scoreboard"
+  | "kb-search"
+  | "webhook-invocation";
 
 export interface SceneDef {
   id: SceneId;
@@ -33,6 +37,12 @@ export interface Flow {
   /** One-liner shown as a subtitle in the picker */
   description: string;
   scenes: SceneDef[];
+  /**
+   * When true, the main builder area shows completed/filled tab states
+   * (e.g. the Plan tab shows the generated build plan) instead of empty states.
+   * This is for "Completed States" demo flows only — not production behaviour.
+   */
+  completedStates?: boolean;
 }
 
 // ── Scene catalogue ──────────────────────────────────────────────────────────
@@ -47,44 +57,39 @@ const S: Record<SceneId, SceneDef> = {
   "trends-anomalies":     { id: "trends-anomalies",     header: "Analyzing trends and anomalies" },
   "closed-conversations": { id: "closed-conversations", header: "Analyzing closed conversations" },
   "automation-discovery": { id: "automation-discovery", header: "Utilizing automation discovery" },
+  "customer-discovery":   { id: "customer-discovery",   header: "Running customer discovery" },
+  "test-run-scoreboard":  { id: "test-run-scoreboard",  header: "Analyzing test run results"  },
+  "kb-search":            { id: "kb-search",            header: "Searching knowledge base articles" },
+  "webhook-invocation":   { id: "webhook-invocation",   header: "Invoking webhook connections"      },
 };
 
 // ── Flow definitions ─────────────────────────────────────────────────────────
 
 export const FLOWS: Flow[] = [
   {
-    id: "full-demo",
-    label: "Full demo",
-    description: "All 8 CoT scenes in order",
+    id: "cot-animations",
+    label: "CoT animations",
+    description: "All 12 CoT scenes in order",
     scenes: Object.values(S),
   },
   {
-    id: "dispute-resolution",
-    label: "Dispute resolution",
-    description: "Topic discovery → KB files → tasks → KB navigation",
-    scenes: [
-      S["topic-discovery"],
-      S["files-explored"],
-      S["todos-tasks"],
-    ],
+    id: "full-demo",
+    label: "Full demo",
+    description: "End to end flow",
+    scenes: Object.values(S),
   },
   {
-    id: "analytics",
-    label: "Analytics",
-    description: "Trends & anomalies + closed conversation analysis",
-    scenes: [
-      S["trends-anomalies"],
-      S["closed-conversations"],
-    ],
+    id: "build-flow",
+    label: "Build flow",
+    description: "Companion generating a build plan",
+    scenes: Object.values(S),
   },
   {
-    id: "automation",
-    label: "Automation discovery",
-    description: "Topic discovery + automation flow extraction",
-    scenes: [
-      S["topic-discovery"],
-      S["automation-discovery"],
-    ],
+    id: "completed-states",
+    label: "Completed states",
+    description: "Completed tab states across the builder",
+    scenes: Object.values(S),
+    completedStates: true,
   },
 ];
 
