@@ -24,12 +24,14 @@ const PHASE_MS = [500, 1000, 1000, 1000, 900, 2600];
 // ── Icons ─────────────────────────────────────────────────────────────────────
 function AgentIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-      <rect x="4" y="8" width="14" height="10" rx="3" stroke="currentColor" strokeWidth="1.6"/>
-      <path d="M8 14h.01M14 14h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-      <path d="M11 8V5.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-      <circle cx="11" cy="4.5" r="1.2" fill="currentColor"/>
-      <path d="M7 8V7a4 4 0 018 0v1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <path d="M6 6a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2l0 -4"/>
+      <path d="M12 2v2"/>
+      <path d="M9 12v9"/><path d="M15 12v9"/>
+      <path d="M5 16l4 -2"/><path d="M15 14l4 2"/>
+      <path d="M9 18h6"/>
+      <path d="M10 8v.01"/><path d="M14 8v.01"/>
     </svg>
   );
 }
@@ -45,10 +47,11 @@ function FnIcon() {
 
 function WebhookIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-      <path d="M9 11a3 3 0 106 0 3 3 0 00-6 0z" stroke="currentColor" strokeWidth="1.6"/>
-      <path d="M14 8.5A6 6 0 118 13.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      <path d="M9 13.5L6 17M17 5l-4 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <path d="M4.876 13.61a4 4 0 1 0 6.124 3.39h6"/>
+      <path d="M15.066 20.502a4 4 0 1 0 1.934 -7.502c-.706 0 -1.424 .179 -2 .5l-3 -5.5"/>
+      <path d="M16 8a4 4 0 1 0 -8 0c0 1.506 .77 2.818 2 3.5l-3 5.5"/>
     </svg>
   );
 }

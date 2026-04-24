@@ -22,7 +22,8 @@ export type SceneId =
   | "customer-discovery"
   | "test-run-scoreboard"
   | "kb-search"
-  | "webhook-invocation";
+  | "webhook-invocation"
+  | "virtual-agent";
 
 export interface SceneDef {
   id: SceneId;
@@ -61,6 +62,7 @@ const S: Record<SceneId, SceneDef> = {
   "test-run-scoreboard":  { id: "test-run-scoreboard",  header: "Analyzing test run results"  },
   "kb-search":            { id: "kb-search",            header: "Searching knowledge base articles" },
   "webhook-invocation":   { id: "webhook-invocation",   header: "Invoking webhook connections"      },
+  "virtual-agent":        { id: "virtual-agent",        header: "Listing virtual agents and channels" },
 };
 
 // ── Flow definitions ─────────────────────────────────────────────────────────
@@ -69,7 +71,7 @@ export const FLOWS: Flow[] = [
   {
     id: "cot-animations",
     label: "CoT animations",
-    description: "All 12 CoT scenes in order",
+    description: "All 13 CoT scenes in order",
     scenes: Object.values(S),
   },
   {

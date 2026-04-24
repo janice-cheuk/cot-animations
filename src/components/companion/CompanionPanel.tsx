@@ -6,6 +6,7 @@ import { CustomerDiscoveryBody } from "./CustomerDiscoveryBody";
 import { TestRunScoreboardBody } from "./TestRunScoreboardBody";
 import { KBSearchBody } from "./KBSearchBody";
 import { WebhookInvocationBody } from "./WebhookInvocationBody";
+import { VirtualAgentBody } from "./VirtualAgentBody";
 import type { SceneDef } from "../../data/flows";
 
 // ── Icon components ──────────────────────────────────────────────────────────
@@ -1062,6 +1063,7 @@ export function CompanionPanel({ userPrompt, scenes, onNavigateKB }: CompanionPa
                 {currentId === "test-run-scoreboard" && <TestRunScoreboardBody  sceneKey={cotIndex} />}
                 {currentId === "kb-search"           && <KBSearchBody           sceneKey={cotIndex} />}
                 {currentId === "webhook-invocation"  && <WebhookInvocationBody  sceneKey={cotIndex} />}
+                {currentId === "virtual-agent"       && <VirtualAgentBody        sceneKey={cotIndex} />}
               </div>
             </div>
 

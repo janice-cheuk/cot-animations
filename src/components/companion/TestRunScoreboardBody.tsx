@@ -82,11 +82,14 @@ function FlaskIcon() {
 
 function RobotIcon() {
   return (
-    <svg width="9" height="9" viewBox="0 0 14 14" fill="none">
-      <rect x="2" y="5" width="10" height="7" rx="2" stroke="currentColor" strokeWidth="1.4"/>
-      <path d="M5 8h.01M9 8h.01" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-      <path d="M7 5V3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-      <circle cx="7" cy="2.5" r="0.7" fill="currentColor"/>
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <path d="M6 6a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2l0 -4"/>
+      <path d="M12 2v2"/>
+      <path d="M9 12v9"/><path d="M15 12v9"/>
+      <path d="M5 16l4 -2"/><path d="M15 14l4 2"/>
+      <path d="M9 18h6"/>
+      <path d="M10 8v.01"/><path d="M14 8v.01"/>
     </svg>
   );
 }

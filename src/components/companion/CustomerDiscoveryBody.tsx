@@ -180,42 +180,38 @@ function CustomerView() {
   );
 }
 
+// widths for the two abstract lines per profile card
+const PROFILE_LINES = [
+  [65, 40], [55, 35], [70, 45], [60, 38],
+];
+
 function ProfileView() {
   const hl = useReveal(900);
   return (
     <div style={{ width: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
       {PROFILES.map((p, i) => {
         const sel = p.id === SEL_PROFILE;
+        const [w1, w2] = PROFILE_LINES[i];
         return (
           <motion.div
             key={p.id}
             initial={{ opacity: 0, y: 10 }}
-            animate={{
-              opacity: hl ? (sel ? 1 : 0.22) : 1,
-              y: 0,
-            }}
+            animate={{ opacity: hl ? (sel ? 1 : 0.22) : 1, y: 0 }}
             transition={{ delay: i * 0.1, duration: 0.38, ease: "easeOut" }}
             style={{
-              padding: "7px 10px",
+              padding: "8px 10px",
               borderRadius: 8,
               background: hl && sel ? "#eff6ff" : "white",
               border: `1px solid ${hl && sel ? "#3b82f6" : "#e5e7eb"}`,
               boxShadow: hl && sel
                 ? "0 0 0 2px rgba(59,130,246,0.12), 0 1px 4px rgba(0,0,0,0.06)"
                 : "0 1px 2px rgba(0,0,0,0.05)",
+              display: "flex", flexDirection: "column", gap: 5,
               transition: "all 0.45s ease",
             }}
           >
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#1e293b", lineHeight: 1.4 }}>
-              {p.name}
-            </p>
-            <span style={{
-              display: "inline-block", marginTop: 3,
-              fontSize: 10, color: "#64748b", fontWeight: 500,
-              background: "#f1f5f9", borderRadius: 4, padding: "1px 6px",
-            }}>
-              {p.env}
-            </span>
+            <div style={{ height: 7, width: `${w1}%`, borderRadius: 99, background: hl && sel ? "#bfdbfe" : "#e2e8f0" }} />
+            <div style={{ height: 5, width: `${w2}%`, borderRadius: 99, background: hl && sel ? "#dbeafe" : "#f1f5f9" }} />
           </motion.div>
         );
       })}
@@ -223,24 +219,27 @@ function ProfileView() {
   );
 }
 
+// [main bar width %, tag width px] per usecase row
+const USECASE_LINES = [
+  [62, 28], [50, 32], [55, 24], [48, 30], [58, 26],
+];
+
 function UsecaseView() {
   const hl = useReveal(900);
   return (
     <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 4 }}>
       {USECASES.map((u, i) => {
         const sel = u.id === SEL_USECASE;
+        const [mainW, tagW] = USECASE_LINES[i];
         return (
           <motion.div
             key={u.id}
             initial={{ opacity: 0, x: -10 }}
-            animate={{
-              opacity: hl ? (sel ? 1 : 0.25) : 1,
-              x: 0,
-            }}
+            animate={{ opacity: hl ? (sel ? 1 : 0.25) : 1, x: 0 }}
             transition={{ delay: i * 0.09, duration: 0.32, ease: "easeOut" }}
             style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "5px 8px 5px 7px",
+              padding: "6px 8px 6px 7px",
               borderRadius: 7,
               background: hl && sel ? "#eff6ff" : "white",
               border:     `1px solid ${hl && sel ? "#bfdbfe" : "#e5e7eb"}`,
@@ -249,20 +248,8 @@ function UsecaseView() {
               transition: "all 0.45s ease",
             }}
           >
-            <span style={{
-              fontSize: 11,
-              fontWeight: sel && hl ? 600 : 400,
-              color: hl && sel ? "#1e40af" : "#374151",
-            }}>
-              {u.name}
-            </span>
-            <span style={{
-              fontSize: 10, fontWeight: 500, color: "#64748b",
-              background: "#f1f5f9", borderRadius: 4, padding: "1px 6px",
-              flexShrink: 0,
-            }}>
-              {u.tag}
-            </span>
+            <div style={{ height: 6, width: `${mainW}%`, borderRadius: 99, background: hl && sel ? "#bfdbfe" : "#e2e8f0" }} />
+            <div style={{ height: 6, width: tagW, borderRadius: 99, background: hl && sel ? "#dbeafe" : "#f1f5f9", flexShrink: 0 }} />
           </motion.div>
         );
       })}
