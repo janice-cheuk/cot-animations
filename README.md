@@ -2,6 +2,8 @@
 
 A UI-only, deterministic prototype that demonstrates the animated chain-of-thought (CoT) experience for the AI Agent Builder Companion. No backend required — every scene is a pre-scripted animation that engineers can lift directly into the real repo.
 
+> **Latest addition — scene 14:** *Citations into Director* (`citations-director`). Shows the agent progressively citing named sections/documents it is pulling into the director, using the same checklist layout as scene 3 (Thinking) but with blue link-styled citation labels and no section header. See [scene 14 backend integration](#scene-14--citations-into-director) below.
+
 ---
 
 ## Quick start
@@ -36,6 +38,7 @@ src/
 │   │   ├── TrendsAnomaliesBody (inline)    ← animated SVG line chart
 │   │   ├── ClosedConversationsBody (inline)← fading document rows
 │   │   ├── AutomationDiscoveryBody (inline)← spinner → icon timeline
+│   │   ├── CitationsDirectorBody (inline)  ← citation checklist with blue link labels
 │   │   ├── CustomerDiscoveryBody.tsx       ← progressive cluster → usecase reveal
 │   │   ├── TestRunScoreboardBody.tsx       ← infinite-scroll test run rows
 │   │   ├── KBSearchBody.tsx               ← infinite-scroll KB articles + scan beam
@@ -214,7 +217,7 @@ import { ThinkingDots } from "@/engine/primitives/ThinkingDots";
 
 ## Layer 2 — CoT scene components
 
-Each component maps to one chain-of-thought scene. Scenes 1–8 are implemented as named functions inside `CompanionPanel.tsx`. Scenes 9–13 are self-contained files in `src/components/companion/`.
+Each component maps to one chain-of-thought scene. Scenes 1–8 and scene 14 are implemented as named functions inside `CompanionPanel.tsx`. Scenes 9–13 are self-contained files in `src/components/companion/`.
 
 When integrating into the real repo, extract each body component to `src/components/cot/<Name>.tsx` and connect to live backend data.
 
@@ -233,6 +236,7 @@ When integrating into the real repo, extract each body component to `src/compone
 | 11 | Searching knowledge base articles | `KBSearchBody` | `KBSearchBody.tsx` | Infinite upward scroll; horizontal glowing scan beam via `x` transform on a gradient `div`; matched articles highlighted with relevance badges |
 | 12 | Invoking webhook connections | `WebhookInvocationBody` | `WebhookInvocationBody.tsx` | 6-phase state machine (idle → agent → remote fn → webhook → API → response); animated gradient pulse traveling along connector lines; activation ripple rings on each node; icon-only nodes using Tabler icons |
 | 13 | Listing virtual agents and channels | `VirtualAgentBody` | `VirtualAgentBody.tsx` | Staggered row entrance; 3-phase state machine highlighting selected VA; VOICE/CHAT/EMAIL channel pips light up sequentially with individual colour coding |
+| 14 | Citing relevant sources into director | `CitationsDirectorBody` | `CompanionPanel.tsx` | Staggered checklist (same pattern as scene 3) with done/active/pending states; each item has a blue link-styled citation label (`#205ae3`); no section header |
 
 ### Connecting to the backend
 
@@ -250,6 +254,68 @@ Each body component renders **hardcoded/mocked content**. When wiring to a real 
 > **Spinner convention:** All active/loading states use the `AISpinner` component (a 12 × 12 rotating SVG arc). Scene 8 uses `ADSpinner` (16 × 16) to match its larger icon container. Both use `#205ae3` arc on a light grey track.
 
 > **Icon convention:** All robot/agent icons use the official **Tabler `icon-tabler-robot`** SVG paths. All other icons (webhook, phone, chat, email, code brackets, server) use their respective Tabler outline equivalents.
+
+---
+
+### Scene 14 — Citations into Director
+
+**Scene ID:** `citations-director`  
+**CoT header:** `"Citing relevant sources into director"`  
+**Component:** `CitationsDirectorBody` (inline in `CompanionPanel.tsx`)
+
+#### What it shows
+
+A progressive checklist where each row represents one source the agent is citing. Items stagger in from left with a 100 ms delay between each. The checklist has **no section header** (unlike scene 3 which has "Tasks to complete"). Each item has:
+
+- A status icon on the left — green filled circle (done), animated dashed circle (active, pulsing), faded empty circle (pending)
+- A short action phrase in `var(--content-secondary)`
+- A **blue link label** (`color: #205ae3`) immediately following the phrase — this is the name of the cited section or document
+
+#### Mock data (replace in production)
+
+```ts
+// CompanionPanel.tsx — CITATION_TASKS constant
+const CITATION_TASKS = [
+  { label: "Referencing escalation playbook section ", linkLabel: "Billing Disputes",              status: "done"    },
+  { label: "Citing tone guide ",                       linkLabel: "Response Format Guidelines",    status: "done"    },
+  { label: "Pulling in ",                              linkLabel: "Intent Fallback Config",         status: "active"  },
+  { label: "Referencing ",                             linkLabel: "Historical Conversation Patterns", status: "pending" },
+  { label: "Citing ",                                  linkLabel: "Agent Routing Logic v2",         status: "pending" },
+];
+```
+
+#### Backend integration
+
+Replace `CITATION_TASKS` with live data from the agent's citation tool-call responses. Each entry in the array maps to one citation event emitted by the backend:
+
+| Field | Backend source | Notes |
+|---|---|---|
+| `label` | Action verb from the citation event type (e.g. `"Referencing "`, `"Pulling in "`) | Keep trailing space — `linkLabel` is rendered inline |
+| `linkLabel` | The `section_name` or `document_title` returned by the director citation API | Rendered in blue (`#205ae3`) |
+| `status` | Derived from streaming event state: `"done"` = citation resolved, `"active"` = in-flight, `"pending"` = queued | Drive this from real tool-call completion events, not `setTimeout` |
+
+**Recommended event-driven pattern:**
+
+```ts
+// Example: consume a stream of citation events and build the task list reactively
+type CitationStatus = "done" | "active" | "pending";
+
+interface CitationTask {
+  label: string;
+  linkLabel: string;
+  status: CitationStatus;
+}
+
+function onCitationEvent(event: CitationStreamEvent, tasks: CitationTask[]) {
+  return tasks.map(t =>
+    t.linkLabel === event.sectionName
+      ? { ...t, status: event.resolved ? "done" : "active" }
+      : t
+  );
+}
+```
+
+**Triggering the scene:** Emit `citations-director` as the active `SceneId` in your CoT step stream when the agent begins the director citation phase. The companion panel will render `CitationsDirectorBody` automatically.
 
 ---
 
@@ -291,7 +357,7 @@ Type anything in the input bar on the start screen and press **Enter** (or click
 
 ### 2. Navigate between animation scenes
 
-Once inside the builder, use **arrow keys** to step through all 13 CoT scenes in the Companion panel:
+Once inside the builder, use **arrow keys** to step through all 14 CoT scenes in the Companion panel:
 
 | Key | Action |
 |---|---|
@@ -317,6 +383,7 @@ Dot indicators at the bottom of the Companion panel show which scene is active a
 | 11 | **Searching knowledge base articles** | Infinite upward-scrolling abstract article cards with a horizontal glowing scan beam sweeping across |
 | 12 | **Invoking webhook connections** | Progressive icon chain (Agent → Remote Fn → Webhook → API) with animated pulse flows traveling along connectors |
 | 13 | **Listing virtual agents and channels** | VA roster loading in with staggered rows; selected agent highlights and VOICE / CHAT / EMAIL channel pips activate one by one |
+| 14 | **Citing relevant sources into director** | Staggered citation checklist with blue link-styled source names; done/active/pending states; no section header |
 
 ### 4. Switching flows with the Demo Controller
 
@@ -330,7 +397,7 @@ Available flows (defined in `src/data/flows.ts`):
 
 | Flow | Description |
 |---|---|
-| **CoT animations** | All 13 CoT scenes in order |
+| **CoT animations** | All 14 CoT scenes in order |
 | **Full demo** | End to end flow |
 | **Build flow** | Companion generating a build plan |
 | **Completed states** | Completed tab states across the builder (Plan, Prompt, Tools, Voice) |

@@ -441,6 +441,52 @@ function TodoTasksBody() {
   );
 }
 
+// Scene — Citations into Director
+const CITATION_TASKS = [
+  { label: "Referencing escalation playbook section ", linkLabel: "Billing Disputes", status: "done"    },
+  { label: "Citing tone guide ", linkLabel: "Response Format Guidelines", status: "done"    },
+  { label: "Pulling in ", linkLabel: "Intent Fallback Config", status: "active"  },
+  { label: "Referencing ", linkLabel: "Historical Conversation Patterns", status: "pending" },
+  { label: "Citing ", linkLabel: "Agent Routing Logic v2", status: "pending" },
+];
+
+function CitationsDirectorBody() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingLeft: 0 }}>
+      {CITATION_TASKS.map((t, i) => (
+        <motion.div
+          key={`${t.status}-${i}`}
+          initial={{ opacity: 0, x: -6 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 + i * 0.1, duration: 0.25, ease: "easeOut" }}
+          style={{ display: "flex", alignItems: "center", gap: 6 }}
+        >
+          {t.status === "done"    && <CircleCheckIcon />}
+          {t.status === "active"  && (
+            <motion.span
+              animate={{ opacity: [1, 0.5, 1] }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <CircleDashedIcon />
+            </motion.span>
+          )}
+          {t.status === "pending" && <span style={{ opacity: 0.4 }}><CircleEmptyIcon /></span>}
+          <span style={{
+            fontSize: 12, fontWeight: 400, lineHeight: 1.55,
+            color: "var(--content-secondary)",
+            opacity: t.status === "pending" ? 0.5 : 1,
+          }}>
+            {t.label}
+            {t.linkLabel && (
+              <span style={{ color: "#205ae3", cursor: "pointer" }}>{t.linkLabel}</span>
+            )}
+          </span>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 // Scene 3 — Generic reasoning text
 function GenericReasoningBody({ sceneKey }: { sceneKey: number }) {
   return (
@@ -1064,6 +1110,7 @@ export function CompanionPanel({ userPrompt, scenes, onNavigateKB }: CompanionPa
                 {currentId === "kb-search"           && <KBSearchBody           sceneKey={cotIndex} />}
                 {currentId === "webhook-invocation"  && <WebhookInvocationBody  sceneKey={cotIndex} />}
                 {currentId === "virtual-agent"       && <VirtualAgentBody        sceneKey={cotIndex} />}
+                {currentId === "citations-director"  && <CitationsDirectorBody />}
               </div>
             </div>
 
