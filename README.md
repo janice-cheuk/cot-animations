@@ -2,8 +2,6 @@
 
 A UI-only, deterministic prototype that demonstrates the animated chain-of-thought (CoT) experience for the AI Agent Builder Companion. No backend required — every scene is a pre-scripted animation that engineers can lift directly into the real repo.
 
-> **Latest addition — scene 14:** *Citations into Director* (`citations-director`). Shows the agent progressively citing named sections/documents it is pulling into the director, using the same checklist layout as scene 3 (Thinking) but with blue link-styled citation labels and no section header. See [scene 14 backend integration](#scene-14--citations-into-director) below.
-
 ---
 
 ## Quick start
@@ -30,6 +28,10 @@ src/
 ├── components/
 │   ├── companion/         ← Layer 2: CoT body components + shell UI
 │   │   ├── CompanionPanel.tsx              ← scene orchestrator + keyboard nav
+│   │   ├── ParallelLanesSection (inline)   ← collapsible parallel-tasks accordion
+│   │   ├── ParallelLanesBody (inline)      ← lane list with auto-expand + user toggle
+│   │   ├── SceneBody (inline)              ← shared scene router used by both modes
+│   │   ├── GradientSpinner (inline)        ← CSS conic-gradient spinner (brand palette)
 │   │   ├── TopicDiscoveryBody (inline)     ← shimmer header + gear illustration
 │   │   ├── FilesExploredBody (inline)      ← staggered file list + spinner
 │   │   ├── TodoTasksBody (inline)          ← tasks → nav pill → KB tab → questions
@@ -47,7 +49,7 @@ src/
 │   ├── builder/           ← Main builder area (tabs, plan, prompt, tools, voice)
 │   └── nav/               ← Static nav sidebar
 ├── data/
-│   └── flows.ts           ← Scene catalogue + flow definitions
+│   └── flows.ts           ← Scene catalogue, flow definitions, and Lane definitions
 └── App.tsx
 ```
 
@@ -55,6 +57,7 @@ src/
 - Changing timing or easing → edit `engine/timing.ts`
 - Changing what a CoT step looks like → edit the matching body component
 - Adding a new scene → see *Adding or editing a scene* below
+- Adding a parallel flow → see *Multi-task parallel lanes* below
 - Building a new animation primitive → add to `engine/primitives/`
 
 ---
@@ -70,6 +73,148 @@ All body components should follow these constraints to stay consistent within th
 | Total component height (unbounded layouts) | `≤ 220px` |
 
 These values ensure the animation graphic fits cleanly alongside the CoT header, typewriter text, and navigation elements without overflowing the companion panel viewport.
+
+---
+
+## Multi-task parallel lanes
+
+This is the primary way individual animations compose into a complete experience. Rather than showing one CoT scene at a time, the parallel lanes mode surfaces multiple concurrent tool calls as a live accordion — each lane is one running task that activates, expands its full animation body, and completes independently.
+
+### What it looks like
+
+```
+▼ Running tasks in parallel          ← collapsible header (click to toggle)
+│
+│  ◉  Searching knowledge base       ← GradientSpinner + expanded body below
+│  │   ┌────────────────────────┐
+│  │   │  [KBSearchBody anim]   │    ← full scene animation visible
+│  │   └────────────────────────┘
+│
+│  ◉  Running customer discovery     ← spinner only (collapsed, lower priority)
+│  ◉  Analyzing trends & anomalies   ← spinner only (collapsed)
+│  ○  Evaluating test run results    ← pending (not yet active)
+│  ○  Invoking webhook connections   ← pending
+│  ...
+│
+│  ✓  Exploring KB files             ← done (green check, collapsed)
+```
+
+The **highest-priority active lane** auto-expands. All other active lanes show the gradient spinner and a chevron — clicking any active lane pins it open instead. Clicking the open lane collapses it back to auto. When a lane completes, focus shifts automatically to the next highest-priority active lane.
+
+### How animations combine
+
+Each lane uses an existing single-scene body component. The parallel mode is a **container** — it composes scenes, it does not duplicate them. The `SceneBody` router (inline in `CompanionPanel.tsx`) is the shared render switch used by both single-scene mode and parallel mode:
+
+```tsx
+// SceneBody is called identically whether rendering one scene or one lane
+<SceneBody sceneId={lane.sceneId} sceneKey={0} />
+```
+
+This means every animation built for the single-scene flow — scan beams, infinite scrollers, SVG charts, webhook chains — works inside parallel lanes with zero modification.
+
+### Demo flow — "Parallel build"
+
+Defined in `src/data/flows.ts` under `id: "parallel-build"`. Uses 9 lanes across three activation waves:
+
+| Wave | Lanes | Activates at |
+|---|---|---|
+| 1 | KB Search, Customer Discovery, Trends, Anomalies | t = 0–1.2s |
+| 2 | Test Run, Webhook, Virtual Agents | t = 2.0–2.8s |
+| 3 | Automation Discovery, Files, Topic Discovery | t = 3.4–4.2s |
+
+Lanes complete staggered over 5–12s, creating a natural handoff sequence: KB → Customer Discovery → Webhook → Virtual Agents.
+
+### Data model
+
+```ts
+// src/data/flows.ts
+interface Lane {
+  id: string;
+  label: string;         // shown in the collapsed row
+  sceneId: SceneId;      // which animation body to render when expanded
+  activateAt: number;    // ms after mount → "pending" to "active"
+  completeAt: number;    // ms after mount → "active" to "done"
+  priority: number;      // higher = auto-expanded first (see priority model below)
+}
+
+interface Flow {
+  // ...existing fields
+  lanes?: Lane[];        // present → CompanionPanel renders parallel mode
+}
+```
+
+A flow with `lanes` set renders `ParallelLanesSection`. `scenes[]` is unused in this mode. Flows without `lanes` behave exactly as before (single-scene + arrow-key navigation).
+
+### Priority model — production spec
+
+In the demo, `priority` is a static integer assigned at flow-definition time (higher = more visually interesting animation to show first). In production, **priority must be dynamic**, computed from streaming progress.
+
+**Rule: the lane that has streamed the most tokens is expanded.**
+
+The task furthest along has the richest partial result to show the user and is the most "alive" — it is the best proxy for "something worth seeing right now."
+
+```ts
+// Re-derive on every streaming event from the backend
+const autoExpandedId = activeLanes
+  .sort((a, b) => tokensStreamed[b.id] - tokensStreamed[a.id])[0]?.id ?? null;
+```
+
+**Required backend event shape:**
+
+```ts
+interface LaneStreamEvent {
+  laneId: string;
+  tokensStreamed: number;           // cumulative tokens for this tool call
+  status: "active" | "done" | "error";
+}
+```
+
+**Frontend state:**
+
+```ts
+const [tokensStreamed, setTokensStreamed] = useState<Record<string, number>>({});
+
+function onStreamEvent(event: LaneStreamEvent) {
+  setTokensStreamed(prev => ({ ...prev, [event.laneId]: event.tokensStreamed }));
+  if (event.status !== "active") {
+    setStatuses(prev => ({ ...prev, [event.laneId]: event.status }));
+  }
+}
+```
+
+**Why not other strategies:**
+
+| Strategy | Problem |
+|---|---|
+| Recency (most recently activated) | Constantly shifts focus to newly spawned tasks — distracting |
+| First-in (activation order) | Ignores which task is actually producing output |
+| Static priority | Works for demos; not meaningful in production where task order isn't known ahead of time |
+| Progress by tokens | Best proxy for "this lane has something to show right now" ✓ |
+
+**Error handling:** Lanes that error transition to `"error"` status — show a red icon, no spinner, stay in the list, never compete for the expanded slot.
+
+**User override:** The user can always click any active lane to pin it open. This overrides auto-priority and persists until that lane completes, at which point auto resumes.
+
+### Adding a parallel flow
+
+1. Define an array of `Lane` objects with `activateAt`, `completeAt`, and `priority` values
+2. Add a `Flow` entry to `FLOWS` in `src/data/flows.ts` with `lanes` set and `scenes: []`
+3. No changes to `CompanionPanel` needed — it detects `lanes?.length` and switches mode automatically
+
+```ts
+// src/data/flows.ts
+{
+  id: "my-parallel-flow",
+  label: "My parallel flow",
+  description: "Description shown in the demo picker",
+  scenes: [],
+  lanes: [
+    { id: "task-a", label: "Searching KB",       sceneId: "kb-search",       activateAt: 0,    completeAt: 5000, priority: 2 },
+    { id: "task-b", label: "Analyzing trends",   sceneId: "trends-anomalies", activateAt: 800,  completeAt: 7000, priority: 1 },
+    { id: "task-c", label: "Invoking webhooks",  sceneId: "webhook-invocation", activateAt: 1600, completeAt: 9000, priority: 0 },
+  ],
+}
+```
 
 ---
 
@@ -251,7 +396,7 @@ Each body component renders **hardcoded/mocked content**. When wiring to a real 
 - `VirtualAgentBody` — the `VA_ROWS` constant is filler. Replace with the response from `virtual-agent list` + `virtual-agent get` (channels array per VA).
 - `WebhookInvocationBody` — the slot names are illustrative. Replace with the actual slots returned by `webhook get`.
 
-> **Spinner convention:** All active/loading states use the `AISpinner` component (a 12 × 12 rotating SVG arc). Scene 8 uses `ADSpinner` (16 × 16) to match its larger icon container. Both use `#205ae3` arc on a light grey track.
+> **Spinner convention:** All active/loading states inside scene bodies use the `AISpinner` component (a 12 × 12 rotating SVG arc). Scene 8 uses `ADSpinner` (16 × 16). Both use `#205ae3` arc on a light grey track. The parallel lanes list uses `GradientSpinner` — a CSS `conic-gradient` ring using the brand gradient palette (`#5a8fc4 → #6e5ea8 → #966895 → #b87a7a → #d4a07a → #8a9db8`), matching the "Start building with ___" text cycler.
 
 > **Icon convention:** All robot/agent icons use the official **Tabler `icon-tabler-robot`** SVG paths. All other icons (webhook, phone, chat, email, code brackets, server) use their respective Tabler outline equivalents.
 
@@ -259,8 +404,8 @@ Each body component renders **hardcoded/mocked content**. When wiring to a real 
 
 ### Scene 14 — Citations into Director
 
-**Scene ID:** `citations-director`  
-**CoT header:** `"Citing relevant sources into director"`  
+**Scene ID:** `citations-director`
+**CoT header:** `"Citing relevant sources into director"`
 **Component:** `CitationsDirectorBody` (inline in `CompanionPanel.tsx`)
 
 #### What it shows
@@ -271,41 +416,17 @@ A progressive checklist where each row represents one source the agent is citing
 - A short action phrase in `var(--content-secondary)`
 - A **blue link label** (`color: #205ae3`) immediately following the phrase — this is the name of the cited section or document
 
-#### Mock data (replace in production)
-
-```ts
-// CompanionPanel.tsx — CITATION_TASKS constant
-const CITATION_TASKS = [
-  { label: "Referencing escalation playbook section ", linkLabel: "Billing Disputes",              status: "done"    },
-  { label: "Citing tone guide ",                       linkLabel: "Response Format Guidelines",    status: "done"    },
-  { label: "Pulling in ",                              linkLabel: "Intent Fallback Config",         status: "active"  },
-  { label: "Referencing ",                             linkLabel: "Historical Conversation Patterns", status: "pending" },
-  { label: "Citing ",                                  linkLabel: "Agent Routing Logic v2",         status: "pending" },
-];
-```
-
 #### Backend integration
 
-Replace `CITATION_TASKS` with live data from the agent's citation tool-call responses. Each entry in the array maps to one citation event emitted by the backend:
+Replace `CITATION_TASKS` with live data from the agent's citation tool-call responses. Each entry maps to one citation event emitted by the backend:
 
 | Field | Backend source | Notes |
 |---|---|---|
 | `label` | Action verb from the citation event type (e.g. `"Referencing "`, `"Pulling in "`) | Keep trailing space — `linkLabel` is rendered inline |
 | `linkLabel` | The `section_name` or `document_title` returned by the director citation API | Rendered in blue (`#205ae3`) |
-| `status` | Derived from streaming event state: `"done"` = citation resolved, `"active"` = in-flight, `"pending"` = queued | Drive this from real tool-call completion events, not `setTimeout` |
-
-**Recommended event-driven pattern:**
+| `status` | Derived from streaming event state: `"done"` = citation resolved, `"active"` = in-flight, `"pending"` = queued | Drive from real tool-call completion events, not `setTimeout` |
 
 ```ts
-// Example: consume a stream of citation events and build the task list reactively
-type CitationStatus = "done" | "active" | "pending";
-
-interface CitationTask {
-  label: string;
-  linkLabel: string;
-  status: CitationStatus;
-}
-
 function onCitationEvent(event: CitationStreamEvent, tasks: CitationTask[]) {
   return tasks.map(t =>
     t.linkLabel === event.sectionName
@@ -314,8 +435,6 @@ function onCitationEvent(event: CitationStreamEvent, tasks: CitationTask[]) {
   );
 }
 ```
-
-**Triggering the scene:** Emit `citations-director` as the active `SceneId` in your CoT step stream when the agent begins the director citation phase. The companion panel will render `CitationsDirectorBody` automatically.
 
 ---
 
@@ -401,6 +520,7 @@ Available flows (defined in `src/data/flows.ts`):
 | **Full demo** | End to end flow |
 | **Build flow** | Companion generating a build plan |
 | **Completed states** | Completed tab states across the builder (Plan, Prompt, Tools, Voice) |
+| **Parallel build** | 9 concurrent agent tasks activating in waves — showcases parallel lanes mode |
 
 To add a new flow, append an entry to the `FLOWS` array in `src/data/flows.ts` — no changes to any component are needed.
 

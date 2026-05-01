@@ -7,7 +7,7 @@ import { TestRunScoreboardBody } from "./TestRunScoreboardBody";
 import { KBSearchBody } from "./KBSearchBody";
 import { WebhookInvocationBody } from "./WebhookInvocationBody";
 import { VirtualAgentBody } from "./VirtualAgentBody";
-import type { SceneDef } from "../../data/flows";
+import type { SceneDef, Lane, SceneId } from "../../data/flows";
 
 // ── Icon components ──────────────────────────────────────────────────────────
 
@@ -926,15 +926,302 @@ function AgentSectionsBody() {
   );
 }
 
+// ── Gradient spinner — matches "Start building with ___" palette ─────────────
+
+function GradientSpinner({ size = 12 }: { size?: number }) {
+  const ring = Math.max(1.5, size * 0.17);
+  return (
+    <div
+      style={{
+        width: size, height: size,
+        borderRadius: "50%",
+        background: "conic-gradient(from 0deg, #5a8fc4 0%, #6e5ea8 22%, #966895 35%, #b87a7a 55%, #d4a07a 78%, #8a9db8 91%, transparent 100%)",
+        flexShrink: 0,
+        position: "relative",
+        animation: "cot-spin 1.1s linear infinite",
+      }}
+    >
+      <div style={{
+        position: "absolute",
+        top: ring, left: ring, right: ring, bottom: ring,
+        borderRadius: "50%",
+        background: "var(--background-surface, white)",
+      }} />
+    </div>
+  );
+}
+
+// ── Scene body router ────────────────────────────────────────────────────────
+// Shared by single-scene mode and parallel-lanes mode.
+
+function SceneBody({ sceneId, sceneKey }: { sceneId: SceneId; sceneKey: number }) {
+  return (
+    <>
+      {sceneId === "topic-discovery"     && <TopicDiscoveryBody sceneKey={sceneKey} />}
+      {sceneId === "files-explored"      && <FilesExploredBody />}
+      {sceneId === "todos-tasks"          && <TodoTasksBody />}
+      {sceneId === "generic-text"         && <GenericReasoningBody sceneKey={sceneKey} />}
+      {sceneId === "agent-sections"       && <AgentSectionsBody />}
+      {sceneId === "trends-anomalies"     && <TrendsAnomaliesBody sceneKey={sceneKey} />}
+      {sceneId === "closed-conversations" && <ClosedConversationsBody sceneKey={sceneKey} />}
+      {sceneId === "automation-discovery" && <AutomationDiscoveryBody sceneKey={sceneKey} />}
+      {sceneId === "customer-discovery"   && <CustomerDiscoveryBody sceneKey={sceneKey} />}
+      {sceneId === "test-run-scoreboard"  && <TestRunScoreboardBody sceneKey={sceneKey} />}
+      {sceneId === "kb-search"            && <KBSearchBody sceneKey={sceneKey} />}
+      {sceneId === "webhook-invocation"   && <WebhookInvocationBody sceneKey={sceneKey} />}
+      {sceneId === "virtual-agent"        && <VirtualAgentBody sceneKey={sceneKey} />}
+      {sceneId === "citations-director"   && <CitationsDirectorBody />}
+    </>
+  );
+}
+
+// ── Parallel lanes ────────────────────────────────────────────────────────────
+
+function ParallelLanesSection({ lanes }: { lanes: Lane[] }) {
+  const [open, setOpen] = useState(true);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      style={{ display: "flex", flexDirection: "column", gap: 12 }}
+    >
+      {/* Clickable header */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+      >
+        <motion.span
+          animate={{ opacity: [1, 0.65, 1] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          style={{ display: "inline-flex", alignItems: "center" }}
+        >
+          <span className="cot-shimmer-text" style={{ fontSize: 14, fontWeight: 550, lineHeight: 1.55 }}>
+            Running tasks in parallel
+          </span>
+        </motion.span>
+        <motion.span
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
+          style={{ display: "flex", color: "var(--content-secondary)", flexShrink: 0 }}
+        >
+          <ChevronDownIcon />
+        </motion.span>
+      </div>
+
+      {/* Collapsible body */}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="parallel-body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            style={{ overflow: "hidden" }}
+          >
+            <div style={{ display: "flex", gap: 12, paddingLeft: 6 }}>
+              <div style={{ width: 1, background: "var(--border-default)", flexShrink: 0, borderRadius: 1 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <ParallelLanesBody lanes={lanes} />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+type LaneStatus = "pending" | "active" | "done";
+
+function ParallelLanesBody({ lanes }: { lanes: Lane[] }) {
+  const [statuses, setStatuses] = useState<Record<string, LaneStatus>>(
+    () => Object.fromEntries(lanes.map(l => [l.id, "pending" as LaneStatus]))
+  );
+
+  // null   = use auto (highest-priority active)
+  // laneId = user pinned this lane open
+  // "__none__" = user explicitly collapsed everything
+  const [manualExpandedId, setManualExpandedId] = useState<string | null>(null);
+
+  // Arm all activation and completion timers on mount
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    lanes.forEach(lane => {
+      timers.push(setTimeout(() =>
+        setStatuses(prev => ({ ...prev, [lane.id]: "active" })), lane.activateAt));
+      timers.push(setTimeout(() =>
+        setStatuses(prev => ({ ...prev, [lane.id]: "done"   })), lane.completeAt));
+    });
+    return () => timers.forEach(clearTimeout);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto: highest-priority active lane
+  const autoExpandedId = lanes
+    .filter(l => statuses[l.id] === "active")
+    .sort((a, b) => b.priority - a.priority)[0]?.id ?? null;
+
+  // If the manually pinned lane has since completed, fall back to auto
+  const effectiveManual =
+    manualExpandedId === "__none__" ? "__none__" :
+    manualExpandedId && statuses[manualExpandedId] === "active" ? manualExpandedId :
+    null;
+
+  const expandedLaneId = effectiveManual === "__none__" ? null : (effectiveManual ?? autoExpandedId);
+
+  const handleLaneClick = (laneId: string) => {
+    if (statuses[laneId] !== "active") return;
+    if (expandedLaneId === laneId) {
+      setManualExpandedId("__none__"); // collapse
+    } else {
+      setManualExpandedId(laneId);    // pin open
+    }
+  };
+
+  const activeCount = Object.values(statuses).filter(s => s === "active").length;
+  const doneCount  = Object.values(statuses).filter(s => s === "done").length;
+  const allDone    = doneCount === lanes.length;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {/* Progress summary pill */}
+      <motion.div
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
+        style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}
+      >
+        <AnimatePresence mode="wait">
+          {allDone ? (
+            <motion.span
+              key="done-badge"
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              style={{
+                fontSize: 10, fontWeight: 600, color: "#099268",
+                background: "#e6fcf5", padding: "1px 7px", borderRadius: 99,
+              }}
+            >
+              all done
+            </motion.span>
+          ) : activeCount > 0 ? (
+            <motion.span
+              key="active-badge"
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              style={{
+                fontSize: 10, fontWeight: 600, color: "#205ae3",
+                background: "#eef2ff", padding: "1px 7px", borderRadius: 99,
+              }}
+            >
+              {activeCount} running
+            </motion.span>
+          ) : null}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Lane rows */}
+      {lanes.map((lane, i) => {
+        const status     = statuses[lane.id];
+        const isExpanded = lane.id === expandedLaneId;
+        const isClickable = status === "active";
+
+        return (
+          <motion.div
+            key={lane.id}
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.04 + i * 0.05, duration: 0.22, ease: "easeOut" }}
+          >
+            {/* Row */}
+            <div
+              onClick={() => handleLaneClick(lane.id)}
+              style={{
+                display: "flex", alignItems: "center", gap: 7,
+                padding: "5px 0",
+                cursor: isClickable ? "pointer" : "default",
+              }}
+            >
+              {/* Status icon */}
+              {status === "done"    && <CircleCheckIcon />}
+              {status === "active"  && <GradientSpinner size={12} />}
+              {status === "pending" && (
+                <span style={{ opacity: 0.3, display: "flex" }}>
+                  <CircleEmptyIcon />
+                </span>
+              )}
+
+              {/* Label */}
+              <span style={{
+                flex: 1, fontSize: 12, lineHeight: 1.55,
+                fontWeight: status === "active" ? 500 : 400,
+                color: "var(--content-secondary)",
+                opacity: status === "pending" ? 0.5 : 1,
+              }}>
+                {lane.label}
+              </span>
+
+              {/* Chevron — only on active lanes */}
+              {isClickable && (
+                <motion.svg
+                  width="12" height="12" viewBox="0 0 12 12" fill="none"
+                  animate={{ rotate: isExpanded ? 180 : 0 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  style={{ flexShrink: 0, color: "var(--content-secondary)", opacity: 0.5 }}
+                >
+                  <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </motion.svg>
+              )}
+            </div>
+
+            {/* Expanded animation body */}
+            <AnimatePresence>
+              {isExpanded && (
+                <motion.div
+                  key="body"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                  style={{ overflow: "hidden" }}
+                >
+                  <div style={{
+                    display: "flex", gap: 10,
+                    paddingLeft: 18, paddingTop: 8, paddingBottom: 12,
+                  }}>
+                    {/* Blue accent left line */}
+                    <div style={{
+                      width: 1, flexShrink: 0, borderRadius: 1,
+                      background: "#205ae3", opacity: 0.35,
+                    }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <SceneBody sceneId={lane.sceneId} sceneKey={0} />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 
 interface CompanionPanelProps {
   userPrompt: string;
   scenes: SceneDef[];
+  lanes?: Lane[];
   onNavigateKB?: () => void;
 }
 
-export function CompanionPanel({ userPrompt, scenes, onNavigateKB }: CompanionPanelProps) {
+export function CompanionPanel({ userPrompt, scenes, lanes, onNavigateKB }: CompanionPanelProps) {
   const [inputValue, setInputValue] = useState("");
   const [cotIndex, setCotIndex] = useState(0);
   const dirRef = useRef(1);
@@ -1055,97 +1342,93 @@ export function CompanionPanel({ userPrompt, scenes, onNavigateKB }: CompanionPa
           </div>
         </div>
 
-        {/* CoT block */}
-        <AnimatePresence mode="wait" custom={dirRef.current}>
-          <motion.div
-            key={cotIndex}
-            custom={dirRef.current}
-            variants={slideVariants}
-            initial="enter" animate="center" exit="exit"
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            style={{ display: "flex", flexDirection: "column", gap: 12 }}
-          >
-            {/* CoT header — freezes once the todos-tasks scene completes */}
-            {(() => {
-              const isDone = currentId === "todos-tasks" && spinDone;
-              const header = scenes[cotIndex]?.header ?? "";
-              return (
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  {isDone ? (
-                    <span style={{ fontSize: 14, fontWeight: 550, lineHeight: 1.55, color: "var(--content-secondary)" }}>
-                      {header}
-                    </span>
-                  ) : (
-                    <motion.span
-                      animate={{ opacity: [1, 0.65, 1] }}
-                      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                      style={{ display: "inline-flex", alignItems: "center" }}
-                    >
-                      <span className="cot-shimmer-text" style={{ fontSize: 14, fontWeight: 550, lineHeight: 1.55 }}>
-                        {header}
+        {/* ── Parallel-lanes mode ─────────────────────────────────── */}
+        {lanes?.length ? (
+          <ParallelLanesSection lanes={lanes} />
+        
+
+        ) : (
+        /* ── Single-scene mode ──────────────────────────────────── */
+          <>
+            <AnimatePresence mode="wait" custom={dirRef.current}>
+              <motion.div
+                key={cotIndex}
+                custom={dirRef.current}
+                variants={slideVariants}
+                initial="enter" animate="center" exit="exit"
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+              >
+                {/* CoT header */}
+                {(() => {
+                  const isDone = currentId === "todos-tasks" && spinDone;
+                  const header = scenes[cotIndex]?.header ?? "";
+                  return (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {isDone ? (
+                        <span style={{ fontSize: 14, fontWeight: 550, lineHeight: 1.55, color: "var(--content-secondary)" }}>
+                          {header}
+                        </span>
+                      ) : (
+                        <motion.span
+                          animate={{ opacity: [1, 0.65, 1] }}
+                          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                          style={{ display: "inline-flex", alignItems: "center" }}
+                        >
+                          <span className="cot-shimmer-text" style={{ fontSize: 14, fontWeight: 550, lineHeight: 1.55 }}>
+                            {header}
+                          </span>
+                        </motion.span>
+                      )}
+                      <span style={{ color: "var(--content-secondary)", flexShrink: 0 }}>
+                        <ChevronDownIcon />
                       </span>
-                    </motion.span>
-                  )}
-                  <span style={{ color: "var(--content-secondary)", flexShrink: 0 }}>
-                    <ChevronDownIcon />
-                  </span>
+                    </div>
+                  );
+                })()}
+
+                {/* CoT body */}
+                <div style={{ display: "flex", gap: 12, paddingLeft: 6 }}>
+                  <div style={{ width: 1, background: "var(--border-default)", flexShrink: 0, borderRadius: 1 }} />
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+                    {currentId && <SceneBody sceneId={currentId as SceneId} sceneKey={cotIndex} />}
+                  </div>
                 </div>
-              );
-            })()}
 
-            {/* CoT body */}
-            <div style={{ display: "flex", gap: 12, paddingLeft: 6 }}>
-              <div style={{ width: 1, background: "var(--border-default)", flexShrink: 0, borderRadius: 1 }} />
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-                {currentId === "topic-discovery"    && <TopicDiscoveryBody sceneKey={cotIndex} />}
-                {currentId === "files-explored"     && <FilesExploredBody />}
-                {currentId === "todos-tasks"         && <TodoTasksBody />}
-                {currentId === "generic-text"        && <GenericReasoningBody sceneKey={cotIndex} />}
-                {currentId === "agent-sections"      && <AgentSectionsBody />}
-                {currentId === "trends-anomalies"    && <TrendsAnomaliesBody sceneKey={cotIndex} />}
-                {currentId === "closed-conversations" && <ClosedConversationsBody sceneKey={cotIndex} />}
-                {currentId === "automation-discovery" && <AutomationDiscoveryBody sceneKey={cotIndex} />}
-                {currentId === "customer-discovery"  && <CustomerDiscoveryBody  sceneKey={cotIndex} />}
-                {currentId === "test-run-scoreboard" && <TestRunScoreboardBody  sceneKey={cotIndex} />}
-                {currentId === "kb-search"           && <KBSearchBody           sceneKey={cotIndex} />}
-                {currentId === "webhook-invocation"  && <WebhookInvocationBody  sceneKey={cotIndex} />}
-                {currentId === "virtual-agent"       && <VirtualAgentBody        sceneKey={cotIndex} />}
-                {currentId === "citations-director"  && <CitationsDirectorBody />}
-              </div>
-            </div>
+                {/* Navigation pill */}
+                {currentId === "todos-tasks" && spinDone && <NavigationPill done={navDone} />}
 
-            {/* Navigation pill — appears after todos-tasks scene completes */}
-            {currentId === "todos-tasks" && spinDone && <NavigationPill done={navDone} />}
-
-            {/* Clarifying questions — appears once navigation completes */}
-            <AnimatePresence>
-              {currentId === "todos-tasks" && navDone && <ClarifyingQuestions key="clarifying" />}
+                {/* Clarifying questions */}
+                <AnimatePresence>
+                  {currentId === "todos-tasks" && navDone && <ClarifyingQuestions key="clarifying" />}
+                </AnimatePresence>
+              </motion.div>
             </AnimatePresence>
-          </motion.div>
-        </AnimatePresence>
 
-        {/* Scene indicator */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 4 }}>
-          <div style={{ display: "flex", gap: 5 }}>
-            {scenes.map((_, i) => (
-              <motion.button
-                key={i}
-                onClick={() => { dirRef.current = i > cotIndex ? 1 : -1; setCotIndex(i); }}
-                animate={{ opacity: i === cotIndex ? 1 : 0.3 }}
-                transition={{ duration: 0.2 }}
-                style={{
-                  width: i === cotIndex ? 16 : 6, height: 6,
-                  borderRadius: 99, background: "var(--content-action)",
-                  border: "none", padding: 0, cursor: "pointer",
-                  transition: "width 0.2s ease",
-                }}
-              />
-            ))}
-          </div>
-          <span style={{ fontSize: 10, color: "var(--content-secondary)", opacity: 0.5, letterSpacing: "0.02em" }}>
-            ← → to navigate
-          </span>
-        </div>
+            {/* Scene indicator dots */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 4 }}>
+              <div style={{ display: "flex", gap: 5 }}>
+                {scenes.map((_, i) => (
+                  <motion.button
+                    key={i}
+                    onClick={() => { dirRef.current = i > cotIndex ? 1 : -1; setCotIndex(i); }}
+                    animate={{ opacity: i === cotIndex ? 1 : 0.3 }}
+                    transition={{ duration: 0.2 }}
+                    style={{
+                      width: i === cotIndex ? 16 : 6, height: 6,
+                      borderRadius: 99, background: "var(--content-action)",
+                      border: "none", padding: 0, cursor: "pointer",
+                      transition: "width 0.2s ease",
+                    }}
+                  />
+                ))}
+              </div>
+              <span style={{ fontSize: 10, color: "var(--content-secondary)", opacity: 0.5, letterSpacing: "0.02em" }}>
+                ← → to navigate
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Input bar */}

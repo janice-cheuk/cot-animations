@@ -1057,7 +1057,7 @@ export function BuilderPage({ prompt, flow }: BuilderPageProps) {
 
         {/* Left: Companion card */}
         <div style={{ width: `${splitPct}%`, minWidth: 0, flexShrink: 0, display: "flex" }}>
-          <CompanionPanel userPrompt={prompt} scenes={flow.scenes} onNavigateKB={handleNavigateKB} />
+          <CompanionPanel userPrompt={prompt} scenes={flow.scenes} lanes={flow.lanes} onNavigateKB={handleNavigateKB} />
         </div>
 
         {/* Drag handle */}
